@@ -7,7 +7,7 @@ import (
 )
 
 var _ UserRepository = (*MockUserRepository)(nil)
-var _ TokenService = (*MockTokenService)(nil)
+var _ TokenServiceInterface = (*MockTokenService)(nil)
 var _ AppConfig = (*MockAppConfig)(nil)
 
 type MockUserRepository struct {

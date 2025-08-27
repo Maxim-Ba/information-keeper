@@ -17,13 +17,13 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*dto.UserRepoDTO, error)
 	Update(user *dto.UserRepoDTO) (*dto.UserRepoDTO, error)
 }
-type TokenService interface {
+type TokenServiceInterface interface {
 	RefreshToken(token string) (*JWTToken, error)
 	GenerateToken(*dto.UserRepoDTO) (*JWTToken, error)
 }
 type AuthService struct {
 	userRepository UserRepository
-	tokenService   TokenService
+	tokenService   TokenServiceInterface
 	config         AppConfig
 	// TODO EmailService
 }
@@ -36,7 +36,7 @@ type JWTToken struct {
 	RefreshToken string
 }
 
-func New(userRepository UserRepository, tokenService TokenService, config AppConfig) *AuthService {
+func New(userRepository UserRepository, tokenService TokenServiceInterface, config AppConfig) *AuthService {
 	return &AuthService{userRepository: userRepository, tokenService: tokenService, config: config}
 }
 

@@ -6,3 +6,8 @@ type UserRepoDTO struct {
 	Email          string
 	EmailConfirmed bool
 }
+
+type UserAuthReqDTO struct {
+	Login    string
+	Password string
+}

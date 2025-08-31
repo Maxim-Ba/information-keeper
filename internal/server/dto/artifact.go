@@ -1,20 +1,19 @@
-package domain
+package dto
 
 import "time"
 
-type Artifact struct {
+type ArtifactDTO struct {
 	ID        string
 	OwerID    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	ExpiredAt time.Time
-	Type      ArtifactType
+	Type      ArtifactTypeDTO
 	MetaInfo  string
-	Link      string // URL to the ws3
-
+	Link      string
 }
 
-type ArtifactType struct {
+type ArtifactTypeDTO struct {
 	Id   int
 	Name string
 }

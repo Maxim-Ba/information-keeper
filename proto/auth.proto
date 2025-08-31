@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/Maxim-Ba/information-keeper/proto";
+
+// -----
+
+message UserAuthReqDTO {
+  string login = 1;  
+  string password = 2;
+}
+
+message LoginUserRequest {
+  UserAuthReqDTO user = 1;
+}
+
+message LoginUserResponse {
+  string refreshToken = 1;
+  string accessToken = 2;
+  string error = 3; 
+}
+
+// -----
+
+message UserRegistrationReqDTO {
+  string login = 1;  
+  string password = 2;
+  string email = 3;
+}
+
+message RegistrationUserRequest {
+  UserRegistrationReqDTO user = 1;
+}
+
+message RegistrationUserResponse {
+  string error = 1; 
+}
+
+// -----
+
+message RefreshTokenRequest {
+  string refreshToken = 1;
+}
+
+
+// -----
+
+message LogoutRequest {
+  string accessToken = 1;
+}
+message LogoutResponse {
+  string error = 1; 
+}
+
+// -----
+
+message ChangePasswordRequest {
+  string accessToken = 1;
+}
+message ChangePasswordResponse {
+  string error = 1; 
+}
+
+// -----
+
+message RestorePasswordRequest {
+  string email = 1;
+}
+message RestorePasswordResponse {
+  string error = 1; 
+}
+
+// -----
+
+message SendEmailConfirmationRequest {
+  string email = 1;
+}
+message SendEmailConfirmationResponse {
+  string error = 1; 
+}
+
+// -----
+
+service Auth {
+  rpc Login(LoginUserRequest) returns (LoginUserResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (LoginUserResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Register(RegistrationUserRequest) returns (RegistrationUserResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse); //TODO
+  rpc RestorePassword(RestorePasswordRequest) returns (RestorePasswordResponse);
+  rpc SendEmailConfirmation(SendEmailConfirmationRequest) returns (SendEmailConfirmationResponse);
+  
+} 

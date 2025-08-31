@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package artifact;
+
+option go_package = "github.com/Maxim-Ba/information-keeper/proto";
+
+
+// ----- Artifact Types -----
+
+enum ArtifactTypeEnum {
+  UNKNOWN = 0;
+  TEXT = 1;
+  IMAGE = 2;
+  DOCUMENT = 3;
+  CREDENTIAL = 4;
+  OTHER = 5;
+}
+
+// ----- Artifact Messages -----
+
+message Artifact {
+  string id = 1;
+  string owner_id = 2;
+  int64 created_at = 3;  // Unix timestamp 
+  int64 updated_at = 4;  // Unix timestamp
+  int64 expired_at = 5;  // Unix timestamp
+  ArtifactTypeEnum type = 6;
+  string meta_info = 7;
+  string link = 8;
+}
+
+message ArtifactType {
+  int32 id = 1;
+  string name = 2;
+}
+
+// ----- CRUD Operations -----
+
+message CreateArtifactRequest {
+  ArtifactTypeEnum type = 2;
+  string meta_info = 3;
+  string link = 4;
+  int64 expired_at = 5;  // Unix timestamp
+}
+
+message CreateArtifactResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+message GetArtifactRequest {
+  string artifact_id = 2;
+}
+
+message GetArtifactResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+message ListArtifactsRequest {
+  int32 page = 2;
+  int32 on_page = 3;
+  ArtifactTypeEnum type_filter = 4;
+}
+
+message ListArtifactsResponse {
+  repeated Artifact artifacts = 1;
+  string error = 2;
+}
+
+message UpdateArtifactRequest {
+  string artifact_id = 2;
+  ArtifactTypeEnum type = 3;
+  string meta_info = 4;
+  string link = 5;
+  int64 expired_at = 6;  // Unix timestamp
+}
+
+message UpdateArtifactResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+message DeleteArtifactRequest {
+  string artifact_id = 2;
+}
+
+message DeleteArtifactResponse {
+  string error = 1;
+}
+
+// ----- OTP Operations -----
+
+message GetWithOTPRequest {
+  string artifact_id = 2;
+}
+
+message GetWithOTPResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+// ----- Real-time Synchronization -----
+
+message SyncRequest {
+  string client_id = 2;
+  int64 last_sync_time = 3;  // Unix timestamp
+}
+
+message SyncEvent {
+  string event_id = 1;
+  int64 timestamp = 2;  // Unix timestamp
+  oneof event_type {
+    ArtifactCreatedEvent artifact_created = 3;
+    ArtifactUpdatedEvent artifact_updated = 4;
+    ArtifactDeletedEvent artifact_deleted = 5;
+    SyncCompleteEvent sync_complete = 6;
+  }
+}
+
+message ArtifactCreatedEvent {
+  Artifact artifact = 1;
+}
+
+message ArtifactUpdatedEvent {
+  Artifact artifact = 1;
+}
+
+message ArtifactDeletedEvent {
+  string artifact_id = 1;
+}
+
+message SyncCompleteEvent {
+  int64 sync_time = 1;  // Unix timestamp
+  int32 events_count = 2;
+}
+
+// ----- Service -----
+
+service ArtifactService {
+  rpc CreateArtifact(CreateArtifactRequest) returns (CreateArtifactResponse);
+  rpc GetArtifact(GetArtifactRequest) returns (GetArtifactResponse);
+  rpc ListArtifacts(ListArtifactsRequest) returns (ListArtifactsResponse);
+  rpc UpdateArtifact(UpdateArtifactRequest) returns (UpdateArtifactResponse);
+  rpc DeleteArtifact(DeleteArtifactRequest) returns (DeleteArtifactResponse);
+  rpc GetWithOTP(GetWithOTPRequest) returns (GetWithOTPResponse);
+  rpc Sync(stream SyncRequest) returns (stream SyncEvent);
+}

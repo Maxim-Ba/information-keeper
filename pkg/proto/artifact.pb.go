@@ -233,7 +233,6 @@ func (x *ArtifactType) GetName() string {
 
 type CreateArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	Type          ArtifactTypeEnum       `protobuf:"varint,2,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
 	MetaInfo      string                 `protobuf:"bytes,3,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
 	Link          string                 `protobuf:"bytes,4,opt,name=link,proto3" json:"link,omitempty"`
@@ -270,13 +269,6 @@ func (x *CreateArtifactRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CreateArtifactRequest.ProtoReflect.Descriptor instead.
 func (*CreateArtifactRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *CreateArtifactRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *CreateArtifactRequest) GetType() ArtifactTypeEnum {
@@ -361,7 +353,6 @@ func (x *CreateArtifactResponse) GetError() string {
 
 type GetArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -395,13 +386,6 @@ func (x *GetArtifactRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetArtifactRequest.ProtoReflect.Descriptor instead.
 func (*GetArtifactRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *GetArtifactRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *GetArtifactRequest) GetArtifactId() string {
@@ -465,7 +449,6 @@ func (x *GetArtifactResponse) GetError() string {
 
 type ListArtifactsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
 	OnPage        int32                  `protobuf:"varint,3,opt,name=on_page,json=onPage,proto3" json:"on_page,omitempty"`
 	TypeFilter    ArtifactTypeEnum       `protobuf:"varint,4,opt,name=type_filter,json=typeFilter,proto3,enum=artifact.ArtifactTypeEnum" json:"type_filter,omitempty"`
@@ -501,13 +484,6 @@ func (x *ListArtifactsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListArtifactsRequest.ProtoReflect.Descriptor instead.
 func (*ListArtifactsRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *ListArtifactsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *ListArtifactsRequest) GetPage() int32 {
@@ -585,7 +561,6 @@ func (x *ListArtifactsResponse) GetError() string {
 
 type UpdateArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	Type          ArtifactTypeEnum       `protobuf:"varint,3,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
 	MetaInfo      string                 `protobuf:"bytes,4,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
@@ -623,13 +598,6 @@ func (x *UpdateArtifactRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use UpdateArtifactRequest.ProtoReflect.Descriptor instead.
 func (*UpdateArtifactRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *UpdateArtifactRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *UpdateArtifactRequest) GetArtifactId() string {
@@ -721,7 +689,6 @@ func (x *UpdateArtifactResponse) GetError() string {
 
 type DeleteArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -755,13 +722,6 @@ func (x *DeleteArtifactRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use DeleteArtifactRequest.ProtoReflect.Descriptor instead.
 func (*DeleteArtifactRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *DeleteArtifactRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *DeleteArtifactRequest) GetArtifactId() string {
@@ -817,7 +777,6 @@ func (x *DeleteArtifactResponse) GetError() string {
 
 type GetWithOTPRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -851,13 +810,6 @@ func (x *GetWithOTPRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetWithOTPRequest.ProtoReflect.Descriptor instead.
 func (*GetWithOTPRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *GetWithOTPRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *GetWithOTPRequest) GetArtifactId() string {
@@ -921,7 +873,6 @@ func (x *GetWithOTPResponse) GetError() string {
 
 type SyncRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	LastSyncTime  int64                  `protobuf:"varint,3,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"` // Unix timestamp
 	unknownFields protoimpl.UnknownFields
@@ -956,13 +907,6 @@ func (x *SyncRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
 func (*SyncRequest) Descriptor() ([]byte, []int) {
 	return file_artifact_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *SyncRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
 }
 
 func (x *SyncRequest) GetClientId() string {
@@ -1312,9 +1256,8 @@ const file_artifact_proto_rawDesc = "" +
 	"\x04link\x18\b \x01(\tR\x04link\"2\n" +
 	"\fArtifactType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\xba\x01\n" +
-	"\x15CreateArtifactRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12.\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\x97\x01\n" +
+	"\x15CreateArtifactRequest\x12.\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
 	"\tmeta_info\x18\x03 \x01(\tR\bmetaInfo\x12\x12\n" +
 	"\x04link\x18\x04 \x01(\tR\x04link\x12\x1d\n" +
@@ -1322,25 +1265,22 @@ const file_artifact_proto_rawDesc = "" +
 	"expired_at\x18\x05 \x01(\x03R\texpiredAt\"^\n" +
 	"\x16CreateArtifactResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"X\n" +
-	"\x12GetArtifactRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1f\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"5\n" +
+	"\x12GetArtifactRequest\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
 	"artifactId\"[\n" +
 	"\x13GetArtifactResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\xa3\x01\n" +
-	"\x14ListArtifactsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\x80\x01\n" +
+	"\x14ListArtifactsRequest\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x17\n" +
 	"\aon_page\x18\x03 \x01(\x05R\x06onPage\x12;\n" +
 	"\vtype_filter\x18\x04 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\n" +
 	"typeFilter\"_\n" +
 	"\x15ListArtifactsResponse\x120\n" +
 	"\tartifacts\x18\x01 \x03(\v2\x12.artifact.ArtifactR\tartifacts\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\xdb\x01\n" +
-	"\x15UpdateArtifactRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1f\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xb8\x01\n" +
+	"\x15UpdateArtifactRequest\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
 	"artifactId\x12.\n" +
 	"\x04type\x18\x03 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
@@ -1350,22 +1290,19 @@ const file_artifact_proto_rawDesc = "" +
 	"expired_at\x18\x06 \x01(\x03R\texpiredAt\"^\n" +
 	"\x16UpdateArtifactResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"[\n" +
-	"\x15DeleteArtifactRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1f\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"8\n" +
+	"\x15DeleteArtifactRequest\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
 	"artifactId\".\n" +
 	"\x16DeleteArtifactResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"W\n" +
-	"\x11GetWithOTPRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1f\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"4\n" +
+	"\x11GetWithOTPRequest\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
 	"artifactId\"Z\n" +
 	"\x12GetWithOTPResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"s\n" +
-	"\vSyncRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1b\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"P\n" +
+	"\vSyncRequest\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12$\n" +
 	"\x0elast_sync_time\x18\x03 \x01(\x03R\flastSyncTime\"\xfd\x02\n" +
 	"\tSyncEvent\x12\x19\n" +

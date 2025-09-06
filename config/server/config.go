@@ -12,7 +12,10 @@ type ServerCfg struct {
 }
 
 func NewConfig() *ServerCfg {
-	return &ServerCfg{}
+	return &ServerCfg{
+		ServerPort: "55441",
+		ServerHost: "localhost",
+	}
 }
 
 func (c *ServerCfg) GetConfig() ServerCfg {

@@ -1,22 +1,24 @@
 package main
 
 import (
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	config "github.com/Maxim-Ba/information-keeper/config/server"
 	"github.com/Maxim-Ba/information-keeper/internal/server"
 )
 
 func main() {
-	//TODO get config
+	cfg:= config.NewConfig()
 
 	grpcServer := server.NewGRPCServer()
 
 	go func() {
-		if err := grpcServer.Start(":50051"); err != nil {
+			slog.Info("gRPC server running on " + cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort)
+
+		if err := grpcServer.Start(cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort); err != nil {
 			slog.Error(err.Error())
 		}
 	}()
@@ -25,9 +27,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
-	log.Println("Shutting down gRPC server...")
+	slog.Info("Shutting down gRPC server...")
 
 	grpcServer.Stop()
-	log.Println("gRPC server stopped")
+	slog.Info("gRPC server stopped")
 
 }

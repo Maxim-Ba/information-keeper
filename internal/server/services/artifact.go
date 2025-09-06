@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
-	"github.com/Maxim-Ba/information-keeper/proto"
+	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
 type ArtifactService struct {

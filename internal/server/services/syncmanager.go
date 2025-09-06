@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Maxim-Ba/information-keeper/proto"
+	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
 // SyncManager управляет real-time синхронизацией

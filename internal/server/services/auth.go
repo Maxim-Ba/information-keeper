@@ -8,14 +8,24 @@ import (
 	"github.com/Maxim-Ba/information-keeper/pkg/utils"
 )
 
+type UserReader interface {
+	GetUserByEmail(email string) (*dto.UserRepoDTO, error)
+}
+
+type UserWriter interface {
+	Update(user *dto.UserRepoDTO) (*dto.UserRepoDTO, error)
+}
+type PasswordManager interface {
+	ChangePassword(login, oldPassword, newPassword string) error
+	RestorePassword(email string) error
+}
 type UserRepository interface {
 	Register(login, email, password string) (*dto.UserRepoDTO, error)
 	Login(login, password string) (*dto.UserRepoDTO, error)
-	ChangePassword(login, oldPassword, newPassword string) error
-	RestorePassword(email string) error
 	Logout(acssToken string) error
-	GetUserByEmail(email string) (*dto.UserRepoDTO, error)
-	Update(user *dto.UserRepoDTO) (*dto.UserRepoDTO, error)
+	PasswordManager
+	UserReader
+	UserWriter
 }
 type TokenServiceInterface interface {
 	RefreshToken(token string) (*JWTToken, error)

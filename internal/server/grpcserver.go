@@ -19,9 +19,11 @@ type ArtifactServer struct {
 
 type GRPCServer struct {
 	server *grpc.Server
+	authService  interface{}
+	artifactService interface{}
 }
 
-func NewGRPCServer() *GRPCServer {
+func NewGRPCServer(authService, artifactService interface{}) *GRPCServer {
 	grpcServer := grpc.NewServer()
 
 	authServer := &AuthServer{}
@@ -32,6 +34,8 @@ func NewGRPCServer() *GRPCServer {
 
 	return &GRPCServer{
 		server: grpcServer,
+		authService: authService,
+		artifactService: artifactService,
 	}
 }
 

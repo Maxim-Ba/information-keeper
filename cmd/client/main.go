@@ -16,7 +16,7 @@ func main() {
 	if err := logger.InitLogger(lconfig); err != nil {
 		panic(err)
 	}
-	defer logger.CloseLogger()
+	
 	clnt, err := client.NewGRPCClient(cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort)
 	if err != nil {
 		panic(err)

@@ -17,6 +17,21 @@ type SyncManager struct {
 	retentionPeriod time.Duration
 }
 
+// Broadcast implements SyncManagerInterface.
+func (s *SyncManager) Broadcast(userID string, event proto.SyncEvent) {
+	panic("unimplemented")
+}
+
+// Subscribe implements SyncManagerInterface.
+func (s *SyncManager) Subscribe(userID string, clientID string) chan proto.SyncEvent {
+	panic("unimplemented")
+}
+
+// Unsubscribe implements SyncManagerInterface.
+func (s *SyncManager) Unsubscribe(userID string, clientID string) {
+	panic("unimplemented")
+}
+
 func NewSyncManager(historyLimit int, retentionPeriod time.Duration) *SyncManager {
 	return &SyncManager{
 		subscribers:     make(map[string]map[string]chan *proto.SyncEvent),

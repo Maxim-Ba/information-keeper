@@ -60,6 +60,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.38.3
 	github.com/aws/aws-sdk-go-v2/config v1.31.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.3
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.7
 	github.com/davecgh/go-spew v1.1.1 // indirect

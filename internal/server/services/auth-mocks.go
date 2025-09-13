@@ -23,8 +23,8 @@ func (m *MockUserRepository) Register(login, email, password string) (*dto.UserR
 }
 
 func (m *MockUserRepository) Login(login, password string) (*dto.UserRepoDTO, error) {
-    args := m.Called(login, password)
-    return args.Get(0).(*dto.UserRepoDTO), args.Error(1)
+	args := m.Called(login, password)
+	return args.Get(0).(*dto.UserRepoDTO), args.Error(1)
 }
 
 func (m *MockUserRepository) ChangePassword(login, oldPassword, newPassword string) error {
@@ -58,13 +58,15 @@ func (m *MockUserRepository) Update(user *dto.UserRepoDTO) (*dto.UserRepoDTO, er
 	return args.Get(0).(*dto.UserRepoDTO), args.Error(1)
 }
 
-
-
-
 // MockTokenService реализация TokenService для тестов
 type MockTokenService struct {
 	mock.Mock
 }
+
+// Remove implements TokenServiceInterface.
+func (m *MockTokenService) Remove(token *JWTToken) error {
+	args := m.Called(token)
+	return args.Error(0)}
 
 func (m *MockTokenService) RefreshToken(token string) (*JWTToken, error) {
 	args := m.Called(token)

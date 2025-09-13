@@ -350,72 +350,86 @@ func TestAuthService_RefreshToken_TableDriven(t *testing.T) {
 
 func TestAuthService_Logout(t *testing.T) {
 	t.Run("successful logout", func(t *testing.T) {
-		authService, mockRepo, _, _ := setupTestAuthService()
+		authService, _, mockTokenService, _ := setupTestAuthService()
 		
-		accessToken := "valid_access_token"
+		token := &JWTToken{
+			AcssToken:    "valid_access_token",
+			RefreshToken: "valid_refresh_token",
+		}
+		
 
-		mockRepo.On("Logout", accessToken).
+		mockTokenService.On("Remove", token).
 			Return(nil)
 
-		err := authService.Logout(accessToken)
+		err := authService.Logout(token)
 
 		assert.NoError(t, err)
-		mockRepo.AssertExpectations(t)
+		mockTokenService.AssertExpectations(t)
 	})
 
 	t.Run("logout with repository error", func(t *testing.T) {
-		authService, mockRepo, _, _ := setupTestAuthService()
+		authService, _, mockTokenService, _ := setupTestAuthService()
 		
-		accessToken := "valid_access_token"
+		token := &JWTToken{
+			AcssToken:    "valid_access_token",
+			RefreshToken: "valid_refresh_token",
+		}
 		expectedError := errors.New("logout failed")
 
-		mockRepo.On("Logout", accessToken).
+		mockTokenService.On("Remove", token).
 			Return(expectedError)
 
-		err := authService.Logout(accessToken)
+		err := authService.Logout(token)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "AuthService Logout")
-		mockRepo.AssertExpectations(t)
+		mockTokenService.AssertExpectations(t)
 	})
 
 	t.Run("logout with empty token", func(t *testing.T) {
-		authService, mockRepo, _, _ := setupTestAuthService()
+		authService, _, mockTokenService, _ := setupTestAuthService()
 		
-		accessToken := ""
+		token := &JWTToken{
+			AcssToken:    "",
+			RefreshToken: "",
+		}
 		expectedError := errors.New("token is empty")
 
-		mockRepo.On("Logout", accessToken).
+		mockTokenService.On("Remove", token).
 			Return(expectedError)
 
-		err := authService.Logout(accessToken)
+		err := authService.Logout(token)
 
 		assert.Error(t, err)
-		mockRepo.AssertExpectations(t)
+		mockTokenService.AssertExpectations(t)
 	})
 }
 
 func TestAuthService_Logout_TableDriven(t *testing.T) {
+	token:=&JWTToken{
+			AcssToken:    "valid_access_token",
+			RefreshToken: "valid_refresh_token",
+		}
 	testCases := []struct {
 		name          string
-		accessToken   string
-		setupMocks    func(*MockUserRepository)
+		accessToken   *JWTToken
+		setupMocks    func(*MockTokenService)
 		expectedError bool
 		errorContains string
 	}{
 		{
 			name:        "successful logout",
-			accessToken: "valid_token",
-			setupMocks: func(repo *MockUserRepository) {
-				repo.On("Logout", "valid_token").Return(nil)
+			accessToken: token,
+			setupMocks: func(repo *MockTokenService) {
+				repo.On("Remove", token).Return(nil)
 			},
 			expectedError: false,
 		},
 		{
 			name:        "token not found",
-			accessToken: "nonexistent_token",
-			setupMocks: func(repo *MockUserRepository) {
-				repo.On("Logout", "nonexistent_token").
+			accessToken: token,
+			setupMocks: func(repo *MockTokenService) {
+				repo.On("Remove", token).
 					Return(errors.New("token not found"))
 			},
 			expectedError: true,
@@ -423,9 +437,9 @@ func TestAuthService_Logout_TableDriven(t *testing.T) {
 		},
 		{
 			name:        "already logged out",
-			accessToken: "already_logged_out",
-			setupMocks: func(repo *MockUserRepository) {
-				repo.On("Logout", "already_logged_out").
+			accessToken: token,
+			setupMocks: func(repo *MockTokenService) {
+				repo.On("Remove", token).
 					Return(errors.New("already logged out"))
 			},
 			expectedError: true,
@@ -435,10 +449,10 @@ func TestAuthService_Logout_TableDriven(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			authService, mockRepo, _, _ := setupTestAuthService()
+			authService, _, tokenService, _ := setupTestAuthService()
 
 			if tc.setupMocks != nil {
-				tc.setupMocks(mockRepo)
+				tc.setupMocks(tokenService)
 			}
 
 			err := authService.Logout(tc.accessToken)
@@ -452,7 +466,7 @@ func TestAuthService_Logout_TableDriven(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			mockRepo.AssertExpectations(t)
+			tokenService.AssertExpectations(t)
 		})
 	}
 }

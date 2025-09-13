@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"log/slog"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -17,8 +17,12 @@ import (
 )
 
 func main() {
-	cfg := config.NewConfig()
-
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	cfg, err := config.NewConfig()
+	if err != nil {
+		panic(err)
+	}
 	defer logger.CloseLogger()
 	s3client, err := s3client.New(s3client.Config{
 		Endpoint:        cfg.GetConfig().S3endpoint,
@@ -52,13 +56,23 @@ func main() {
 		}
 	}()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-ctx.Done()
+	slog.Info("Received shutdown signal, initiating graceful shutdown...")
 
-	<-sigChan
-	slog.Info("Shutting down gRPC server...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	grpcServer.Stop()
-	slog.Info("gRPC server stopped")
+	go func() {
+		grpcServer.Stop()
+		cancel()
+	}()
+
+	<-shutdownCtx.Done()
+
+	if shutdownCtx.Err() == context.DeadlineExceeded {
+		slog.Warn("Graceful shutdown timed out, forcing exit")
+	} else {
+		slog.Info("gRPC server stopped gracefully")
+	}
 
 }

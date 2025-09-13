@@ -18,6 +18,12 @@ type TokenService struct {
 	userRepository  UserRepositoryInterface
 	tokenRepository TokenRepositoryInterface
 }
+
+// Remove implements TokenServiceInterface.
+func (s *TokenService) Remove(token *JWTToken) error {
+	panic("unimplemented")
+}
+
 type UserRepositoryInterface interface {
 	GetUserByID(id string) (*dto.UserRepoDTO, error)
 }
@@ -36,8 +42,16 @@ func NewTokenService(
 	tokenRepository TokenRepositoryInterface,
 ) *TokenService {
 	return &TokenService{
-		config: config, userRepository: userRepository, tokenRepository: tokenRepository,}
+		config: config, userRepository: userRepository, tokenRepository: tokenRepository}
 }
+
+func (s *TokenService) Logout(token *JWTToken) error {
+	if err := s.InvalidateToken(token.RefreshToken); err != nil {
+		return fmt.Errorf("failed to invalidate token: %w", err)
+	}
+	return nil
+}
+
 func (s *TokenService) AddToBlacklist(token string, expiry time.Time) error {
 	if s.tokenRepository == nil {
 		return fmt.Errorf("token repository not configured")
@@ -214,13 +228,13 @@ func (s *TokenService) validateToken(tokenString string, isRefresh bool) (*Custo
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 		// Additional validation for token type
 		if isRefresh && time.Until(claims.ExpiresAt.Time) <= time.Hour*24 {
-            return nil, fmt.Errorf("invalid token type: refresh token should have longer expiration")
-        }
-        // Access token should have shorter expiration (less than or equal to 24 hours)
-        if !isRefresh && time.Until(claims.ExpiresAt.Time) > time.Hour*24 {
-            return nil, fmt.Errorf("invalid token type: access token should have shorter expiration")
-        }
-        return claims, nil
+			return nil, fmt.Errorf("invalid token type: refresh token should have longer expiration")
+		}
+		// Access token should have shorter expiration (less than or equal to 24 hours)
+		if !isRefresh && time.Until(claims.ExpiresAt.Time) > time.Hour*24 {
+			return nil, fmt.Errorf("invalid token type: access token should have shorter expiration")
+		}
+		return claims, nil
 	}
 
 	return nil, fmt.Errorf("invalid token claims")

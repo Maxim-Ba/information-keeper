@@ -25,10 +25,7 @@ func (u *UserRepository) Login(login string, password string) (*dto.UserRepoDTO,
 	panic("unimplemented")
 }
 
-// Logout implements services.UserRepository.
-func (u *UserRepository) Logout(acssToken string) error {
-	panic("unimplemented")
-}
+
 
 // Register implements services.UserRepository.
 func (u *UserRepository) Register(login string, email string, password string) (*dto.UserRepoDTO, error) {

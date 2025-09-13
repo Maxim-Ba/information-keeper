@@ -22,7 +22,6 @@ type PasswordManager interface {
 type UserRepository interface {
 	Register(login, email, password string) (*dto.UserRepoDTO, error)
 	Login(login, password string) (*dto.UserRepoDTO, error)
-	Logout(acssToken string) error
 	PasswordManager
 	UserReader
 	UserWriter
@@ -30,7 +29,10 @@ type UserRepository interface {
 type TokenServiceInterface interface {
 	RefreshToken(token string) (*JWTToken, error)
 	GenerateToken(*dto.UserRepoDTO) (*JWTToken, error)
+	 Remove(token *JWTToken) error
 }
+
+
 type AuthService struct {
 	userRepository UserRepository
 	tokenService   TokenServiceInterface
@@ -81,8 +83,8 @@ func (s *AuthService) RefreshToken(refreshToken string) (*JWTToken, error) {
 	return jwt, nil
 }
 
-func (s *AuthService) Logout(acssToken string) error {
-	if err := s.userRepository.Logout(acssToken); err != nil {
+func (s *AuthService) Logout(token *JWTToken) error {
+	if err := s.tokenService.Remove(token); err != nil {
 		return fmt.Errorf("AuthService Logout: %w", err)
 	}
 	return nil

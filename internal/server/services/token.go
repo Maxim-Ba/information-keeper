@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ func (s *TokenService) Remove(token *JWTToken) error {
 }
 
 type UserRepositoryInterface interface {
-	GetUserByID(id string) (*dto.UserRepoDTO, error)
+	GetUserByID(ctx context.Context,id string) (*dto.UserRepoDTO, error)
 }
 
 type CustomClaims struct {
@@ -169,7 +170,7 @@ func (s *TokenService) RefreshToken(refreshToken string) (*JWTToken, error) {
 		return nil, fmt.Errorf("failed to blacklist used refresh token: %w", err)
 	}
 
-	user, err := s.userRepository.GetUserByID(claims.Subject)
+	user, err := s.userRepository.GetUserByID(context.TODO(),claims.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}

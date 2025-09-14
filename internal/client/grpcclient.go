@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -22,6 +23,7 @@ type GRPCClient struct {
 	artifactClient proto.ArtifactServiceClient
 	TokenManager   *TokenManager
 	maxRetries     int
+	healthClient   grpc_health_v1.HealthClient
 }
 
 func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
@@ -36,7 +38,8 @@ func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
 		authClient:     proto.NewAuthClient(conn),
 		artifactClient: proto.NewArtifactServiceClient(conn),
 		TokenManager:   &TokenManager{},
-		maxRetries:     2, // TODO from cfg
+		healthClient:   grpc_health_v1.NewHealthClient(conn),
+		maxRetries: 2, // TODO from cfg
 	}, nil
 }
 
@@ -45,7 +48,21 @@ func (c *GRPCClient) Close() {
 		c.conn.Close()
 	}
 }
-
+func (c *GRPCClient) HealthCheck(ctx context.Context) error {
+	resp, err := c.healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{
+		Service: "", 
+	})
+	
+	if err != nil {
+		return fmt.Errorf("health check failed: %w", err)
+	}
+	
+	if resp.Status != grpc_health_v1.HealthCheckResponse_SERVING {
+		return fmt.Errorf("service not serving, status: %v", resp.Status)
+	}
+	
+	return nil
+}
 func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.LoginUserResponse, error) {
 	req := &proto.LoginUserRequest{
 		User: &proto.UserAuthReqDTO{
@@ -53,9 +70,10 @@ func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.
 			Password: password,
 		},
 	}
-logger.Info(fmt.Sprintf("GRPCClient Login login:%s, password:%s", login, password))
+	logger.Info(fmt.Sprintf("GRPCClient Login login:%s, password:%s", login, password))
 	resp, err := c.authClient.Login(ctx, req)
-	if err != nil && resp.Error != "" {
+
+	if err != nil  {
 		logger.Error(fmt.Sprintf("GRPCClient Login %v", err))
 		return resp, err
 
@@ -310,23 +328,6 @@ func (c *GRPCClient) withAuthToken(ctx context.Context, token string) context.Co
 	return ctx
 }
 
-// HealthCheck проверяет доступность сервера
-func (c *GRPCClient) HealthCheck(ctx context.Context) error {
-	// Простая проверка через вызов любого метода
-	_, err := c.authClient.Login(ctx, &proto.LoginUserRequest{
-		User: &proto.UserAuthReqDTO{
-			Login:    "healthcheck",
-			Password: "healthcheck",
-		},
-	})
-
-	// Ожидаем ошибку аутентификации, но не ошибку соединения
-	if err != nil && err.Error() != "rpc error: code = Unauthenticated desc = invalid credentials" {
-		return err
-	}
-
-	return nil
-}
 
 func (c *GRPCClient) refreshTokens(ctx context.Context) error {
 	refreshToken := c.TokenManager.GetRefreshToken()

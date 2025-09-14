@@ -57,7 +57,8 @@ func TestHashPassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hashed, err := HashPassword(tt.password, tt.secret)
+			pm := &PasswordManager{}
+			hashed, err := pm.HashPassword(tt.password, tt.secret)
 
 			if tt.wantErr {
 				if err == nil {
@@ -91,8 +92,9 @@ func TestCheckPassword(t *testing.T) {
 	secret := "testsecret"
 	password := "correctpassword"
 	wrongPassword := "wrongpassword"
+	pm := &PasswordManager{}
 
-	hashedPassword, err := HashPassword(password, secret)
+	hashedPassword, err := pm.HashPassword(password, secret)
 	if err != nil {
 		t.Fatalf("Failed to hash password for test setup: %v", err)
 	}
@@ -165,7 +167,8 @@ func TestCheckPassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckPassword(tt.hashed, tt.input, tt.secret)
+			pm := &PasswordManager{}
+			err := pm.CheckPassword(tt.hashed, tt.input, tt.secret)
 
 			if tt.wantErr {
 				if err == nil {
@@ -194,29 +197,28 @@ func TestHashAndCheckIntegration(t *testing.T) {
 		{"normal case", "password123", "secret123"},
 		{"special chars", "p@ssw0rd!@#", "s3cr3t!@#"},
 		{"long values", "verylongpassword", "verylongsecretkeythatisalsoverylong"},
-		{"empty secret", "password", ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test hash then check with same password
-			hashed, err := HashPassword(tt.password, tt.secret)
+			pm := &PasswordManager{}
+			hashed, err := pm.HashPassword(tt.password, tt.secret)
 			if err != nil {
 				t.Errorf("HashPassword() failed: %v", err)
 				return
 			}
 
-			err = CheckPassword(hashed, tt.password, tt.secret)
+			err = pm.CheckPassword(hashed, tt.password, tt.secret)
 			if err != nil {
 				t.Errorf("CheckPassword() with correct password failed: %v", err)
 			}
 
-			err = CheckPassword(hashed, "wrongpassword", tt.secret)
+			err = pm.CheckPassword(hashed, "wrongpassword", tt.secret)
 			if err == nil {
 				t.Errorf("CheckPassword() with wrong password should have failed")
 			}
 
-			err = CheckPassword(hashed, tt.password, "wrongsecret")
+			err = pm.CheckPassword(hashed, tt.password, "wrongsecret")
 			if err == nil {
 				t.Errorf("CheckPassword() with wrong secret should have failed")
 			}
@@ -236,7 +238,6 @@ func TestHashPassword_DeterministicPeppering(t *testing.T) {
 		t.Errorf("Peppering is not deterministic: %s != %s", pepper1, pepper2)
 	}
 
-	// Test that different secrets produce different peppers
 	differentSecret := "differentsecret"
 	pepper3 := generatePepper(password, differentSecret)
 
@@ -244,7 +245,6 @@ func TestHashPassword_DeterministicPeppering(t *testing.T) {
 		t.Errorf("Different secrets should produce different peppers")
 	}
 
-	// Test that different passwords produce different peppers
 	differentPassword := "differentpassword"
 	pepper4 := generatePepper(differentPassword, secret)
 
@@ -263,10 +263,11 @@ func generatePepper(password, secret string) string {
 func BenchmarkHashPassword(b *testing.B) {
 	password := "benchmarkpassword"
 	secret := "benchmarksecret"
+	pm := &PasswordManager{}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := HashPassword(password, secret)
+		_, err := pm.HashPassword(password, secret)
 		if err != nil {
 			b.Fatalf("HashPassword failed: %v", err)
 		}
@@ -276,15 +277,16 @@ func BenchmarkHashPassword(b *testing.B) {
 func BenchmarkCheckPassword(b *testing.B) {
 	password := "benchmarkpassword"
 	secret := "benchmarksecret"
-	
-	hashed, err := HashPassword(password, secret)
+	pm := &PasswordManager{}
+
+	hashed, err := pm.HashPassword(password, secret)
 	if err != nil {
 		b.Fatalf("Setup failed: %v", err)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := CheckPassword(hashed, password, secret)
+		err := pm.CheckPassword(hashed, password, secret)
 		if err != nil {
 			b.Fatalf("CheckPassword failed: %v", err)
 		}

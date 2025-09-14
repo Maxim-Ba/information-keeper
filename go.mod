@@ -57,6 +57,7 @@ require (
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/aws/aws-sdk-go-v2 v1.38.3
 	github.com/aws/aws-sdk-go-v2/config v1.31.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.3
@@ -69,5 +70,6 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

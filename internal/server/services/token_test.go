@@ -553,9 +553,7 @@ func TestTokenService_GenerateToken(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 	})
 
-
-
-t.Run("refresh token contains only user ID", func(t *testing.T) {
+	t.Run("refresh token contains only user ID", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
 		user := &dto.UserRepoDTO{
@@ -572,7 +570,6 @@ t.Run("refresh token contains only user ID", func(t *testing.T) {
 		tokens, err := tokenService.GenerateToken(user)
 		assert.NoError(t, err)
 
-	
 		userFromRefresh, err := tokenService.GetUserFromRefreshToken(tokens.RefreshToken)
 		assert.NoError(t, err)
 		assert.Equal(t, user.ID, userFromRefresh.ID)
@@ -605,7 +602,7 @@ t.Run("refresh token contains only user ID", func(t *testing.T) {
 			return []byte(secret), nil
 		})
 		accessClaims := accessToken.Claims.(*CustomClaims)
-		
+
 		// Access token должен истечь через ~15 минут
 		expectedAccessExpiry := startTime.Add(15 * time.Minute)
 		assert.WithinDuration(t, expectedAccessExpiry, accessClaims.ExpiresAt.Time, time.Second*5)
@@ -614,7 +611,7 @@ t.Run("refresh token contains only user ID", func(t *testing.T) {
 			return []byte(secret), nil
 		})
 		refreshClaims := refreshToken.Claims.(*jwt.RegisteredClaims)
-		
+
 		// Refresh token должен истечь через ~7 дней
 		expectedRefreshExpiry := startTime.Add(7 * 24 * time.Hour)
 		assert.WithinDuration(t, expectedRefreshExpiry, refreshClaims.ExpiresAt.Time, time.Second*5)
@@ -695,7 +692,6 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		invalidToken := "invalid.token.here"
 
 		mockTokenRepo.On("IsInBlacklist", invalidToken).Return(false, nil)
-	
 
 		newTokens, err := tokenService.RefreshToken(invalidToken)
 
@@ -740,7 +736,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		secret := "test_secret"
 		expiry := time.Now().Add(time.Hour * 24 * 8)
 		refreshToken := createTestToken(secret, expiry)
-		
+
 		blacklistError := errors.New("blacklist error")
 
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
@@ -761,7 +757,6 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		mockUserRepo.AssertExpectations(t)
 	})
 }
-
 
 func TestTokenService_ValidateToken(t *testing.T) {
 	t.Run("valid access token", func(t *testing.T) {
@@ -993,7 +988,6 @@ func TestTokenService_GetUserFromAcssToken(t *testing.T) {
 
 		invalidToken := "invalid.token.here"
 
-
 		user, err := tokenService.GetUserFromAcssToken(invalidToken)
 
 		assert.Error(t, err)
@@ -1043,7 +1037,6 @@ func TestTokenService_GetUserFromAcssToken(t *testing.T) {
 	})
 }
 
-// 
 func TestTokenService_validateToken(t *testing.T) {
 	t.Run("valid access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
@@ -1188,9 +1181,7 @@ func TestTokenService_validateToken(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 	})
 
-
-
-t.Run("token with 23 hours expiration for access token", func(t *testing.T) {
+	t.Run("token with 23 hours expiration for access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
 		secret := "test_secret"

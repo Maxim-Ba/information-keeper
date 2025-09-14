@@ -43,7 +43,7 @@ var (
 
 func DefaultConfig() LoggerConfig {
 	return LoggerConfig{
-		FilePath:    "app.log",
+		FilePath:    "",
 		Level:       LevelInfo,
 		UseJSON:     false,
 		AddSource:   true,
@@ -66,6 +66,28 @@ func InitLogger(config LoggerConfig) error {
 }
 
 func NewFileLogger(config LoggerConfig) (*FileLogger, error) {
+	// Если FilePath не задан, используем stdout
+	if config.FilePath == "" {
+		opts := &slog.HandlerOptions{
+			Level:     slog.Level(config.Level),
+			AddSource: config.AddSource,
+		}
+		
+		var handler slog.Handler
+		if config.UseJSON {
+			handler = slog.NewJSONHandler(os.Stdout, opts)
+		} else {
+			handler = slog.NewTextHandler(os.Stdout, opts)
+		}
+		
+		return &FileLogger{
+			handler: handler,
+			file:    nil, // stdout не требует закрытия
+			config:  config,
+		}, nil
+	}
+	
+	// Создаем директорию для файла лога, если она не существует
 	if err := os.MkdirAll(filepath.Dir(config.FilePath), 0755); err != nil {
 		return nil, err
 	}
@@ -98,6 +120,7 @@ func (fl *FileLogger) Close() error {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	
+	// Если файл не nil (не stdout), закрываем его
 	if fl.file != nil {
 		return fl.file.Close()
 	}
@@ -105,7 +128,8 @@ func (fl *FileLogger) Close() error {
 }
 
 func (fl *FileLogger) shouldRotate() bool {
-	if fl.config.MaxFileSize <= 0 {
+	// Для stdout ротация не нужна
+	if fl.file == nil || fl.config.MaxFileSize <= 0 {
 		return false
 	}
 	
@@ -118,6 +142,11 @@ func (fl *FileLogger) shouldRotate() bool {
 }
 
 func (fl *FileLogger) rotate() error {
+	// Для stdout ротация не нужна
+	if fl.file == nil {
+		return nil
+	}
+	
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	

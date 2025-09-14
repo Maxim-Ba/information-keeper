@@ -8,19 +8,17 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-
 CREATE TABLE artifact_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-
-INSERT INTO artifact_types (name) VALUES 
+INSERT INTO artifact_types (name) VALUES
     ('test'),
     ('file'),
     ('password'),
-    ('link'),
+    ('link');
 
 CREATE TABLE artifacts (
     id VARCHAR(36) PRIMARY KEY,
@@ -30,13 +28,13 @@ CREATE TABLE artifacts (
     link TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expired_at TIMESTAMP WITH TIME ZONE ,
-    
-    INDEX idx_artifacts_owner_id (owner_id),
-    INDEX idx_artifacts_type_id (type_id),
-    INDEX idx_artifacts_expired_at (expired_at)
+    expired_at TIMESTAMP WITH TIME ZONE
 );
 
+-- Создание индексов отдельными командами
+CREATE INDEX idx_artifacts_owner_id ON artifacts(owner_id);
+CREATE INDEX idx_artifacts_type_id ON artifacts(type_id);
+CREATE INDEX idx_artifacts_expired_at ON artifacts(expired_at);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_login ON users(login);
 CREATE INDEX idx_artifacts_created_at ON artifacts(created_at);

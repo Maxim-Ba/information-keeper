@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
@@ -25,7 +26,7 @@ type MockUserRepositoryInterface struct {
 	mock.Mock
 }
 
-func (m *MockUserRepositoryInterface) GetUserByID(id string) (*dto.UserRepoDTO, error) {
+func (m *MockUserRepositoryInterface) GetUserByID(ctx context.Context, id string) (*dto.UserRepoDTO, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

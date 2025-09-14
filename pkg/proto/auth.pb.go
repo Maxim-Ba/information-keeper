@@ -372,6 +372,7 @@ func (x *RefreshTokenRequest) GetRefreshToken() string {
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=accessToken,proto3" json:"accessToken,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refreshToken,proto3" json:"refreshToken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -409,6 +410,13 @@ func (*LogoutRequest) Descriptor() ([]byte, []int) {
 func (x *LogoutRequest) GetAccessToken() string {
 	if x != nil {
 		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *LogoutRequest) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
 	}
 	return ""
 }
@@ -745,9 +753,10 @@ const file_auth_proto_rawDesc = "" +
 	"\x18RegistrationUserResponse\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\"9\n" +
 	"\x13RefreshTokenRequest\x12\"\n" +
-	"\frefreshToken\x18\x01 \x01(\tR\frefreshToken\"1\n" +
+	"\frefreshToken\x18\x01 \x01(\tR\frefreshToken\"U\n" +
 	"\rLogoutRequest\x12 \n" +
-	"\vaccessToken\x18\x01 \x01(\tR\vaccessToken\"&\n" +
+	"\vaccessToken\x18\x01 \x01(\tR\vaccessToken\x12\"\n" +
+	"\frefreshToken\x18\x02 \x01(\tR\frefreshToken\"&\n" +
 	"\x0eLogoutResponse\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\"9\n" +
 	"\x15ChangePasswordRequest\x12 \n" +

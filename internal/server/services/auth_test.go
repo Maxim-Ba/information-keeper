@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -38,8 +39,8 @@ func TestAuthService_Login(t *testing.T) {
 
 		mockTokenService.On("GenerateToken", expectedUser).
 			Return(expectedToken, nil)
-
-		result, err := authService.Login(login, password)
+		ctx := context.Background()
+		result, err := authService.Login(ctx, login, password)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedToken, result)
@@ -58,8 +59,9 @@ func TestAuthService_Login(t *testing.T) {
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
 			PasswordSecret: "",
 		})
+		ctx := context.Background()
 
-		result, err := authService.Login("testuser", "password")
+		result, err := authService.Login(ctx, "testuser", "password")
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -83,8 +85,9 @@ func TestAuthService_Login(t *testing.T) {
 
 		mockUserRepo.On("Login", login, mock.AnythingOfType("string")).
 			Return((*dto.UserRepoDTO)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.Login(login, password)
+		result, err := authService.Login(ctx, login, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -117,8 +120,9 @@ func TestAuthService_Login(t *testing.T) {
 
 		mockTokenService.On("GenerateToken", expectedUser).
 			Return((*JWTToken)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.Login(login, password)
+		result, err := authService.Login(ctx, login, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -138,8 +142,9 @@ func TestAuthService_Login(t *testing.T) {
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
 			PasswordSecret: "test_secret",
 		})
+		ctx := context.Background()
 
-		result, err := authService.Login("testuser", "")
+		result, err := authService.Login(ctx, "testuser", "")
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -198,8 +203,9 @@ func TestAuthService_Login_TableDriven(t *testing.T) {
 			if tc.setupMocks != nil {
 				tc.setupMocks(mockRepo, mockToken, mockConfig)
 			}
+			ctx := context.Background()
 
-			result, err := authService.Login(tc.login, tc.password)
+			result, err := authService.Login(ctx, tc.login, tc.password)
 
 			if tc.expectedError {
 				assert.Error(t, err)
@@ -219,11 +225,10 @@ func TestAuthService_Login_TableDriven(t *testing.T) {
 	}
 }
 
-
 func TestAuthService_RefreshToken(t *testing.T) {
 	t.Run("successful token refresh", func(t *testing.T) {
 		authService, _, mockToken, _ := setupTestAuthService()
-		
+
 		refreshToken := "valid_refresh_token"
 		expectedToken := &JWTToken{
 			AcssToken:    "new_access_token",
@@ -232,8 +237,9 @@ func TestAuthService_RefreshToken(t *testing.T) {
 
 		mockToken.On("RefreshToken", refreshToken).
 			Return(expectedToken, nil)
+		ctx := context.Background()
 
-		result, err := authService.RefreshToken(refreshToken)
+		result, err := authService.RefreshToken(ctx, refreshToken)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedToken, result)
@@ -242,14 +248,15 @@ func TestAuthService_RefreshToken(t *testing.T) {
 
 	t.Run("invalid refresh token", func(t *testing.T) {
 		authService, _, mockToken, _ := setupTestAuthService()
-		
+
 		refreshToken := "invalid_refresh_token"
 		expectedError := errors.New("invalid token")
 
 		mockToken.On("RefreshToken", refreshToken).
 			Return((*JWTToken)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.RefreshToken(refreshToken)
+		result, err := authService.RefreshToken(ctx, refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -259,14 +266,15 @@ func TestAuthService_RefreshToken(t *testing.T) {
 
 	t.Run("empty refresh token", func(t *testing.T) {
 		authService, _, mockToken, _ := setupTestAuthService()
-		
+
 		refreshToken := ""
 		expectedError := errors.New("token is empty")
 
 		mockToken.On("RefreshToken", refreshToken).
 			Return((*JWTToken)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.RefreshToken(refreshToken)
+		result, err := authService.RefreshToken(ctx, refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -328,8 +336,9 @@ func TestAuthService_RefreshToken_TableDriven(t *testing.T) {
 			if tc.setupMocks != nil {
 				tc.setupMocks(mockToken)
 			}
+			ctx := context.Background()
 
-			result, err := authService.RefreshToken(tc.refreshToken)
+			result, err := authService.RefreshToken(ctx, tc.refreshToken)
 
 			if tc.expectedError {
 				assert.Error(t, err)
@@ -347,21 +356,20 @@ func TestAuthService_RefreshToken_TableDriven(t *testing.T) {
 	}
 }
 
-
 func TestAuthService_Logout(t *testing.T) {
 	t.Run("successful logout", func(t *testing.T) {
 		authService, _, mockTokenService, _ := setupTestAuthService()
-		
+
 		token := &JWTToken{
 			AcssToken:    "valid_access_token",
 			RefreshToken: "valid_refresh_token",
 		}
-		
 
 		mockTokenService.On("Remove", token).
 			Return(nil)
+		ctx := context.Background()
 
-		err := authService.Logout(token)
+		err := authService.Logout(ctx, token)
 
 		assert.NoError(t, err)
 		mockTokenService.AssertExpectations(t)
@@ -369,7 +377,7 @@ func TestAuthService_Logout(t *testing.T) {
 
 	t.Run("logout with repository error", func(t *testing.T) {
 		authService, _, mockTokenService, _ := setupTestAuthService()
-		
+
 		token := &JWTToken{
 			AcssToken:    "valid_access_token",
 			RefreshToken: "valid_refresh_token",
@@ -378,8 +386,9 @@ func TestAuthService_Logout(t *testing.T) {
 
 		mockTokenService.On("Remove", token).
 			Return(expectedError)
+		ctx := context.Background()
 
-		err := authService.Logout(token)
+		err := authService.Logout(ctx, token)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "AuthService Logout")
@@ -388,7 +397,7 @@ func TestAuthService_Logout(t *testing.T) {
 
 	t.Run("logout with empty token", func(t *testing.T) {
 		authService, _, mockTokenService, _ := setupTestAuthService()
-		
+
 		token := &JWTToken{
 			AcssToken:    "",
 			RefreshToken: "",
@@ -397,8 +406,9 @@ func TestAuthService_Logout(t *testing.T) {
 
 		mockTokenService.On("Remove", token).
 			Return(expectedError)
+		ctx := context.Background()
 
-		err := authService.Logout(token)
+		err := authService.Logout(ctx, token)
 
 		assert.Error(t, err)
 		mockTokenService.AssertExpectations(t)
@@ -406,10 +416,10 @@ func TestAuthService_Logout(t *testing.T) {
 }
 
 func TestAuthService_Logout_TableDriven(t *testing.T) {
-	token:=&JWTToken{
-			AcssToken:    "valid_access_token",
-			RefreshToken: "valid_refresh_token",
-		}
+	token := &JWTToken{
+		AcssToken:    "valid_access_token",
+		RefreshToken: "valid_refresh_token",
+	}
 	testCases := []struct {
 		name          string
 		accessToken   *JWTToken
@@ -454,8 +464,9 @@ func TestAuthService_Logout_TableDriven(t *testing.T) {
 			if tc.setupMocks != nil {
 				tc.setupMocks(tokenService)
 			}
+			ctx := context.Background()
 
-			err := authService.Logout(tc.accessToken)
+			err := authService.Logout(ctx, tc.accessToken)
 
 			if tc.expectedError {
 				assert.Error(t, err)
@@ -471,11 +482,10 @@ func TestAuthService_Logout_TableDriven(t *testing.T) {
 	}
 }
 
-
 func TestAuthService_Register(t *testing.T) {
 	t.Run("successful registration", func(t *testing.T) {
 		authService, mockRepo, mockToken, mockConfig := setupTestAuthService()
-		
+
 		expectedConfig := config.ServerCfg{
 			PasswordSecret: "test-secret",
 		}
@@ -510,8 +520,9 @@ func TestAuthService_Register(t *testing.T) {
 		mockRepo.On("Update", mock.MatchedBy(func(user *dto.UserRepoDTO) bool {
 			return user.EmailConfirmed == true
 		})).Return(updatedUser, nil)
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedToken, result)
@@ -522,7 +533,7 @@ func TestAuthService_Register(t *testing.T) {
 
 	t.Run("user already exists", func(t *testing.T) {
 		authService, mockRepo, _, mockConfig := setupTestAuthService()
-		
+
 		login, email, password := "existinguser", "existing@example.com", "password123"
 
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
@@ -531,8 +542,9 @@ func TestAuthService_Register(t *testing.T) {
 
 		mockRepo.On("Register", login, email, mock.AnythingOfType("string")).
 			Return((*dto.UserRepoDTO)(nil), errors.New("user already exists"))
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -543,11 +555,12 @@ func TestAuthService_Register(t *testing.T) {
 
 	t.Run("password too short", func(t *testing.T) {
 		authService, mockRepo, _, mockConfig := setupTestAuthService()
-		
+
 		login, email, password := "testuser", "test@example.com", "short"
 
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -560,7 +573,7 @@ func TestAuthService_Register(t *testing.T) {
 
 	t.Run("repository error during registration", func(t *testing.T) {
 		authService, mockRepo, _, mockConfig := setupTestAuthService()
-		
+
 		login, email, password := "testuser", "test@example.com", "validPassword123"
 		expectedError := errors.New("database error")
 
@@ -570,8 +583,9 @@ func TestAuthService_Register(t *testing.T) {
 
 		mockRepo.On("Register", login, email, mock.AnythingOfType("string")).
 			Return((*dto.UserRepoDTO)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -584,7 +598,7 @@ func TestAuthService_Register(t *testing.T) {
 
 	t.Run("token generation error", func(t *testing.T) {
 		authService, mockRepo, mockToken, mockConfig := setupTestAuthService()
-		
+
 		login, email, password := "testuser", "test@example.com", "validPassword123"
 		expectedUser := &dto.UserRepoDTO{
 			ID:    "1",
@@ -602,8 +616,9 @@ func TestAuthService_Register(t *testing.T) {
 
 		mockToken.On("GenerateToken", expectedUser).
 			Return((*JWTToken)(nil), expectedError)
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -617,7 +632,7 @@ func TestAuthService_Register(t *testing.T) {
 
 	t.Run("error in SendEmailConfirmation", func(t *testing.T) {
 		authService, mockRepo, mockToken, mockConfig := setupTestAuthService()
-		
+
 		login, email, password := "testuser", "test@example.com", "validPassword123"
 		expectedUser := &dto.UserRepoDTO{
 			ID:    "1",
@@ -642,8 +657,9 @@ func TestAuthService_Register(t *testing.T) {
 		// Моки для SendEmailConfirmation с ошибкой
 		mockRepo.On("GetUserByEmail", email).
 			Return((*dto.UserRepoDTO)(nil), errors.New("email service unavailable"))
+		ctx := context.Background()
 
-		result, err := authService.Register(login, email, password)
+		result, err := authService.Register(ctx, login, email, password)
 
 		// Ошибка в SendEmailConfirmation не должна влиять на основной поток регистрации
 		assert.NoError(t, err)
@@ -675,7 +691,7 @@ func TestAuthService_Register_TableDriven(t *testing.T) {
 				cfg.On("GetConfig").Return(config.ServerCfg{PasswordSecret: "secret"})
 				user := &dto.UserRepoDTO{ID: "1", Login: "newuser", Email: "new@example.com"}
 				updatedUser := &dto.UserRepoDTO{ID: "1", Login: "newuser", Email: "new@example.com", EmailConfirmed: true}
-				
+
 				repo.On("Register", "newuser", "new@example.com", mock.AnythingOfType("string")).
 					Return(user, nil)
 				token.On("GenerateToken", user).
@@ -719,16 +735,16 @@ func TestAuthService_Register_TableDriven(t *testing.T) {
 			setupMocks: func(repo *MockUserRepository, token *MockTokenService, cfg *MockAppConfig) {
 				cfg.On("GetConfig").Return(config.ServerCfg{PasswordSecret: "secret"})
 				user := &dto.UserRepoDTO{ID: "1", Login: "user", Email: "test@example.com"}
-				
+
 				repo.On("Register", "user", "test@example.com", mock.AnythingOfType("string")).
 					Return(user, nil)
 				token.On("GenerateToken", user).
 					Return(&JWTToken{AcssToken: "access", RefreshToken: "refresh"}, nil)
 				repo.On("GetUserByEmail", "test@example.com").
 					Return((*dto.UserRepoDTO)(nil), errors.New("email service down"))
-				
+
 			},
-			expectedError: false, 
+			expectedError: false,
 		},
 	}
 
@@ -739,8 +755,9 @@ func TestAuthService_Register_TableDriven(t *testing.T) {
 			if tc.setupMocks != nil {
 				tc.setupMocks(mockRepo, mockToken, mockConfig)
 			}
+			ctx := context.Background()
 
-			result, err := authService.Register(tc.login, tc.email, tc.password)
+			result, err := authService.Register(ctx, tc.login, tc.email, tc.password)
 
 			if tc.expectedError {
 				assert.Error(t, err)

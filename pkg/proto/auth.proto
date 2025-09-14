@@ -48,6 +48,7 @@ message RefreshTokenRequest {
 
 message LogoutRequest {
   string accessToken = 1;
+  string refreshToken = 2;
 }
 message LogoutResponse {
   string error = 1; 

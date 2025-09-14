@@ -2,39 +2,68 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 
+	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
+	"github.com/Maxim-Ba/information-keeper/internal/server/services"
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	pb "github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 type AuthServer struct {
+	authService AuthServiceInterface
+
 	pb.UnimplementedAuthServer
 }
 
 type ArtifactServer struct {
 	pb.UnimplementedArtifactServiceServer
 }
+type HealthServer struct {
+	pb.UnimplementedHealthServer
+}
+type PasswordServiceInterface interface {
+	ChangePassword(ctx context.Context, data *dto.ChangePassword) error
+}
+
+type AuthServiceInterface interface {
+	Login(ctx context.Context, login, password string) (*services.JWTToken, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*services.JWTToken, error)
+	Logout(ctx context.Context, token *services.JWTToken) error
+	Register(ctx context.Context, login, email, password string) (*services.JWTToken, error)
+	SendEmailConfirmation(ctx context.Context, email string) error
+	PasswordServiceInterface
+}
 
 type GRPCServer struct {
-	server *grpc.Server
-	authService  interface{}
+	server          *grpc.Server
 	artifactService interface{}
 }
 
-func NewGRPCServer(authService, artifactService interface{}) *GRPCServer {
+func NewGRPCServer(authService AuthServiceInterface, artifactService interface{}) *GRPCServer {
 	grpcServer := grpc.NewServer()
 
-	authServer := &AuthServer{}
+	authServer := &AuthServer{authService: authService}
 	artifactServer := &ArtifactServer{}
+	healthServer := health.NewServer()
 
 	pb.RegisterAuthServer(grpcServer, authServer)
 	pb.RegisterArtifactServiceServer(grpcServer, artifactServer)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
 
+	healthServer.SetServingStatus("auth", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("artifact", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING) 
 	return &GRPCServer{
 		server: grpcServer,
-		authService: authService,
+
 		artifactService: artifactService,
 	}
 }
@@ -52,19 +81,50 @@ func (s *GRPCServer) Stop() {
 	s.server.GracefulStop()
 }
 
+
+
+func (s *HealthServer) Check(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
+	slog.Info("HealthServer Check")
+	return &pb.HealthCheckResponse{
+		Status: "SERVING",
+	}, nil
+}
 // Реализация методов Auth сервиса
 func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
-	// TODO: Реализовать логику аутентификации
-	slog.Info("AuthServer Login")
+
+	logger.Info("AuthServer Login")
+	jwt, err := s.authService.Login(ctx, req.User.Login, req.User.Password)
+	if err != nil {
+		if err != nil {
+        logger.Error("Ошибка при авторизации", 
+            slog.String("error", err.Error()),
+            slog.String("login", req.User.Login),
+        )
+        
+        // Определяем appropriate gRPC код ошибки
+        var grpcCode codes.Code
+        switch {
+        case errors.Is(err, services.ErrInvalidCredentials):
+            grpcCode = codes.Unauthenticated
+        case errors.Is(err, services.ErrUserNotFound):
+            grpcCode = codes.NotFound
+      
+        default:
+            grpcCode = codes.Internal
+        }
+        
+        return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
+    }
+	}
 	return &pb.LoginUserResponse{
-		RefreshToken: "mock_refresh_token",
-		AccessToken:  "mock_access_token",
+		RefreshToken: jwt.RefreshToken,
+		AccessToken:  jwt.AcssToken,
 	}, nil
 }
 
 func (s *AuthServer) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginUserResponse, error) {
 	// TODO: Реализовать обновление токена
-	slog.Info("AuthServer RefreshToken")
+	logger.Info("AuthServer RefreshToken")
 	return &pb.LoginUserResponse{
 		RefreshToken: "new_refresh_token",
 		AccessToken:  "new_access_token",
@@ -72,18 +132,22 @@ func (s *AuthServer) RefreshToken(ctx context.Context, req *pb.RefreshTokenReque
 }
 
 func (s *AuthServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	// TODO: Реализовать выход
 	slog.Info("AuthServer Logout")
-
-	return &pb.LogoutResponse{
-		
-	}, nil
+	err := s.authService.Logout(ctx, &services.JWTToken{AcssToken: req.AccessToken, RefreshToken: req.RefreshToken})
+	if err != nil {
+		logger.Error("Ошибка при выходе из системы", slog.String("error", err.Error()))
+		return nil, err
+	}
+	return &pb.LogoutResponse{}, nil
 }
 
 func (s *AuthServer) Register(ctx context.Context, req *pb.RegistrationUserRequest) (*pb.RegistrationUserResponse, error) {
-	// TODO: Реализовать регистрацию
 	slog.Info("AuthServer Register")
-
+	_, err := s.authService.Register(ctx, req.User.Login, req.User.Email, req.User.Password)
+	if err != nil {
+		logger.Error("Ошибка при регистрации", slog.String("error", err.Error()))
+		return nil, err
+	}
 	return &pb.RegistrationUserResponse{}, nil
 }
 
@@ -129,7 +193,7 @@ func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactReq
 
 func (s *ArtifactServer) ListArtifacts(ctx context.Context, req *pb.ListArtifactsRequest) (*pb.ListArtifactsResponse, error) {
 	// TODO: Реализовать получение списка артефактов
-	slog.Info("AuthServer ListArtifacts")
+	logger.Info("AuthServer ListArtifacts")
 
 	return &pb.ListArtifactsResponse{
 		Artifacts: []*pb.Artifact{},

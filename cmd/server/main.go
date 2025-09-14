@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os/signal"
 	"syscall"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/Maxim-Ba/information-keeper/internal/server/services"
 	"github.com/Maxim-Ba/information-keeper/pkg/db"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
+	"github.com/Maxim-Ba/information-keeper/pkg/utils"
 )
 
 func main() {
@@ -22,6 +22,11 @@ func main() {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		panic(err)
+	}
+	lgCfg := logger.DefaultConfig()
+	lgCfg.AddSource = false
+	if err := logger.InitLogger(lgCfg); err != nil {
+			panic(err)
 	}
 	defer logger.CloseLogger()
 	s3client, err := s3client.New(s3client.Config{
@@ -38,9 +43,15 @@ func main() {
 	}
 	defer s3client.Close()
 	conn, err := db.New(cfg.GetConfig().DBConnectionString, cfg.GetConfig().MigrationsPath)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer func() {
+		conn.Close()
+	}()
 
 	tokenRepo := repository.NewTokenRepository(conn)
-	userRepo := repository.NewUserRepository(conn)
+	userRepo := repository.NewUserRepository(conn, cfg, &utils.PasswordManager{})
 	artifactRepo := repository.NewArtifactRepository(s3client, conn)
 	tokenService := services.NewTokenService(cfg, userRepo, tokenRepo)
 	authService := services.New(userRepo, tokenService, cfg)
@@ -49,15 +60,15 @@ func main() {
 	artifactService := services.NewArtifactService(artifactRepo, syncManager)
 	grpcServer := server.NewGRPCServer(authService, artifactService)
 	go func() {
-		slog.Info("gRPC server running on " + cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort)
+		logger.Info("gRPC server running on " + cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort)
 
 		if err := grpcServer.Start(cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort); err != nil {
-			slog.Error(err.Error())
+			logger.Error(err.Error())
 		}
 	}()
 
 	<-ctx.Done()
-	slog.Info("Received shutdown signal, initiating graceful shutdown...")
+	logger.Info("Received shutdown signal, initiating graceful shutdown...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -70,9 +81,9 @@ func main() {
 	<-shutdownCtx.Done()
 
 	if shutdownCtx.Err() == context.DeadlineExceeded {
-		slog.Warn("Graceful shutdown timed out, forcing exit")
+		logger.Warn("Graceful shutdown timed out, forcing exit")
 	} else {
-		slog.Info("gRPC server stopped gracefully")
+		logger.Info("gRPC server stopped gracefully")
 	}
 
 }

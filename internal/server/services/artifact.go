@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
@@ -12,11 +14,12 @@ type ArtifactService struct {
 	syncManager        SyncManagerInterface
 }
 type ArtifactRepositoryInterface interface {
-	GetArtifacts(userID string, page int32, onpage int32) ([]domain.Artifact, error)
-	CreateArtifact(artifact *domain.Artifact) (*domain.Artifact, error)
-	UpdateArtifact(artifact *domain.Artifact) (*domain.Artifact, error)
-	DeleteArtifact(id string) (*domain.Artifact, error)
-	GetArtifactByID(id string) (*domain.Artifact, error)
+	GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error)
+	CreateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error)
+	UpdateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error)
+	DeleteArtifact(ctx context.Context, id string) (*domain.Artifact, error)
+	GetArtifactByID(ctx context.Context, id string) (*domain.Artifact, error)
+	GetPresignedURL(ctx context.Context,id string) (string, error)
 }
 type SyncManagerInterface interface {
 	Subscribe(userID string, clientID string) chan proto.SyncEvent
@@ -34,9 +37,9 @@ func NewArtifactService(
 	}
 }
 
-func (s *ArtifactService) GetArtifacts(userID string, page int32, onpage int32) ([]domain.Artifact, error) {
+func (s *ArtifactService) GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error) {
 
-	artifacts, err := s.artifactRepository.GetArtifacts(userID, page, onpage)
+	artifacts, err := s.artifactRepository.GetArtifacts(ctx, userID, page, onpage)
 
 	if err != nil {
 		return nil, fmt.Errorf("ArtifactService GetArtifacts: %w", err)
@@ -44,44 +47,60 @@ func (s *ArtifactService) GetArtifacts(userID string, page int32, onpage int32) 
 	return artifacts, nil
 }
 
-func (s *ArtifactService) CreateArtifact(artifact *domain.Artifact) error {
-	a, err := s.artifactRepository.CreateArtifact(artifact)
+func (s *ArtifactService) CreateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error {
+	// Устанавливаем владельца и временные метки
+	artifact.OwerID = userID
+	artifact.CreatedAt = time.Now()
+	artifact.UpdatedAt = time.Now()
+
+	a, err := s.artifactRepository.CreateArtifact(ctx, artifact)
 	if err != nil {
 		return fmt.Errorf("ArtifactService CreateArtifact: %w", err)
 	}
 
-	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{
-		// TODO: add event
-	})
+	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{})
+
 	return nil
 }
 
-func (s *ArtifactService) UpdateArtifact(userID string, artifact *domain.Artifact) error {
-	artifact, err := s.artifactRepository.GetArtifactByID(artifact.ID)
+func (s *ArtifactService) UpdateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error {
+	existingArtifact, err := s.artifactRepository.GetArtifactByID(ctx, artifact.ID)
 	if err != nil {
 		return err
 	}
-	if !s.isUsersArtifacts(userID, artifact) {
+
+	if !s.isUsersArtifacts(userID, existingArtifact) {
 		return ErrForbiddenAction
 	}
-	a, err := s.artifactRepository.UpdateArtifact(artifact)
+
+	// Обновляем только разрешенные поля
+	existingArtifact.UpdatedAt = time.Now()
+	existingArtifact.ExpiredAt = artifact.ExpiredAt
+	existingArtifact.MetaInfo = artifact.MetaInfo
+	existingArtifact.Link = artifact.Link
+
+	a, err := s.artifactRepository.UpdateArtifact(ctx, existingArtifact)
 	if err != nil {
 		return fmt.Errorf("ArtifactService UpdateArtifact: %w", err)
 	}
+
 	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{
 		// TODO: add event
 	})
+
 	return nil
 }
-func (s *ArtifactService) DeleteArtifact(userID string, id string) error {
-	artifact, err := s.artifactRepository.GetArtifactByID(id)
+func (s *ArtifactService) DeleteArtifact(ctx context.Context, userID string, id string) error {
+	artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
 	if err != nil {
 		return err
 	}
+
 	if !s.isUsersArtifacts(userID, artifact) {
 		return ErrForbiddenAction
 	}
-	a, err := s.artifactRepository.DeleteArtifact(id)
+
+	a, err := s.artifactRepository.DeleteArtifact(ctx, id)
 	if err != nil {
 		return fmt.Errorf("ArtifactService DeleteArtifact: %w", err)
 	}
@@ -89,10 +108,11 @@ func (s *ArtifactService) DeleteArtifact(userID string, id string) error {
 	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{
 		// TODO: add event
 	})
+
 	return nil
 }
-func (s *ArtifactService) GetArtifactByID(userID string, id string) (*domain.Artifact, error) {
-	if artifact, err := s.artifactRepository.GetArtifactByID(id); err != nil {
+func (s *ArtifactService) GetArtifactByID(ctx context.Context, userID string, id string) (*domain.Artifact, error) {
+	if artifact, err := s.artifactRepository.GetArtifactByID(ctx, id); err != nil {
 		return nil, fmt.Errorf("ArtifactService GetArtifactByID: %w", err)
 	} else {
 		if !s.isUsersArtifacts(userID, artifact) {
@@ -103,21 +123,38 @@ func (s *ArtifactService) GetArtifactByID(userID string, id string) (*domain.Art
 }
 
 // Get with one time password (delete after send response)
-func (s *ArtifactService) GetWithOTP(userID string, id string) (*domain.Artifact, error) {
-	artifact, err := s.artifactRepository.GetArtifactByID(id)
+func (s *ArtifactService) GetWithOTP(ctx context.Context, userID string, id string) (*domain.Artifact, error) {
+	artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("ArtifactService GetWithOTP GetArtifactByID: %w", err)
 	}
 	if !s.isUsersArtifacts(userID, artifact) {
 		return nil, ErrForbiddenAction
 	}
-	if err := s.DeleteArtifact(userID, id); err != nil {
+	if err := s.DeleteArtifact(ctx, userID, id); err != nil {
 		return nil, fmt.Errorf("ArtifactService GetWithOTP DeleteArtifact: %w", err)
 	}
 	return artifact, nil
 }
+func (s *ArtifactService) GetPresignedURL(ctx context.Context, userID string, id string) (string, error) {
+    artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
+    if err != nil {
+        return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
+    }
+    
+    if !s.isUsersArtifacts(userID, artifact) {
+        return "", ErrForbiddenAction
+    }
+    
+    url, err := s.artifactRepository.GetPresignedURL(ctx, id)
+    if err != nil {
+        return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
+    }
+    
+    return url, nil
+}
 
 func (s *ArtifactService) isUsersArtifacts(userID string, artifact *domain.Artifact) bool {
-	return userID == artifact.OwerID
-
+    return userID == artifact.OwerID
 }
+

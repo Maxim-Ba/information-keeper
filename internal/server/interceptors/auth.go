@@ -29,7 +29,7 @@ func AuthInterceptor(tokenService *services.TokenService) grpc.UnaryServerInterc
 			return nil, status.Error(codes.Unauthenticated, "authorization token not provided")
 		}
 		token := strings.TrimPrefix(tokens[0], "Bearer ")
-		if err := tokenService.ValidateTokenWithBlacklist(token); err != nil {
+		if err := tokenService.ValidateTokenWithBlacklist(ctx,token); err != nil {
 			return nil, status.Error(codes.Unauthenticated, "invalid token")
 		}
 		user, err := tokenService.GetUserFromAcssToken(token)

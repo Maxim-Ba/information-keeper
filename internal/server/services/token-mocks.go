@@ -12,12 +12,12 @@ type MockTokenRepository struct {
 	mock.Mock
 }
 
-func (m *MockTokenRepository) AddToBlacklist(token string, expiry time.Time) error {
+func (m *MockTokenRepository) AddToBlacklist(ctx context.Context, token string, expiry time.Time) error {
 	args := m.Called(token, expiry)
 	return args.Error(0)
 }
 
-func (m *MockTokenRepository) IsInBlacklist(token string) (bool, error) {
+func (m *MockTokenRepository) IsInBlacklist(ctx context.Context, token string) (bool, error) {
 	args := m.Called(token)
 	return args.Bool(0), args.Error(1)
 }

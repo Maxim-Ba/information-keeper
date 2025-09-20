@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
+)
 
 type Artifact struct {
 	ID        string       `json:"id" db:"id"`
@@ -17,4 +21,35 @@ type Artifact struct {
 type ArtifactType struct {
 	Id   int    `json:"id" db:"id"`
 	Name string `json:"name" db:"name"`
+}
+func DomainToArtifactDTO(artifact *Artifact) dto.ArtifactDTO {
+    return dto.ArtifactDTO{
+        ID:        artifact.ID,
+        OwerID:    artifact.OwerID,
+        CreatedAt: artifact.CreatedAt,
+        UpdatedAt: artifact.UpdatedAt,
+        ExpiredAt: artifact.ExpiredAt,
+        Type: dto.ArtifactTypeDTO{
+            Id:   artifact.Type.Id,
+            Name: artifact.Type.Name,
+        },
+        MetaInfo: artifact.MetaInfo,
+        Link:     artifact.Link,
+    }
+}
+
+func ArtifactDTOToDomain(dto dto.ArtifactDTO) Artifact {
+    return Artifact{
+        ID:        dto.ID,
+        OwerID:    dto.OwerID,
+        CreatedAt: dto.CreatedAt,
+        UpdatedAt: dto.UpdatedAt,
+        ExpiredAt: dto.ExpiredAt,
+        Type: ArtifactType{
+            Id:   dto.Type.Id,
+            Name: dto.Type.Name,
+        },
+        MetaInfo: dto.MetaInfo,
+        Link:     dto.Link,
+    }
 }

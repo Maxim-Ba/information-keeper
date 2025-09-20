@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", token, expiry).
 			Return(nil)
 
-		err := tokenService.AddToBlacklist(token, expiry)
+		err := tokenService.AddToBlacklist(context.Background(),token, expiry)
 
 		assert.NoError(t, err)
 		mockTokenRepo.AssertExpectations(t)
@@ -46,7 +47,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 		token := "test_token"
 		expiry := time.Now().Add(time.Hour)
 
-		err := tokenService.AddToBlacklist(token, expiry)
+		err := tokenService.AddToBlacklist(context.Background(),token, expiry)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token repository not configured")
@@ -66,7 +67,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", token, expiry).
 			Return(expectedError)
 
-		err := tokenService.AddToBlacklist(token, expiry)
+		err := tokenService.AddToBlacklist(context.Background(),token, expiry)
 
 		assert.Error(t, err)
 		assert.Equal(t, expectedError, err)
@@ -87,7 +88,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 		mockTokenRepo.On("IsInBlacklist", token).
 			Return(true, nil)
 
-		result, err := tokenService.IsInBlacklist(token)
+		result, err := tokenService.IsInBlacklist(context.Background(),token)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -106,7 +107,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 		mockTokenRepo.On("IsInBlacklist", token).
 			Return(false, nil)
 
-		result, err := tokenService.IsInBlacklist(token)
+		result, err := tokenService.IsInBlacklist(context.Background(),token)
 
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -125,7 +126,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 
 		token := "test_token"
 
-		result, err := tokenService.IsInBlacklist(token)
+		result, err := tokenService.IsInBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token repository not configured")
@@ -145,7 +146,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 		mockTokenRepo.On("IsInBlacklist", token).
 			Return(false, expectedError)
 
-		result, err := tokenService.IsInBlacklist(token)
+		result, err := tokenService.IsInBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Equal(t, expectedError, err)
@@ -188,7 +189,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", token, mock.AnythingOfType("time.Time")).
 			Return(nil)
 
-		err := tokenService.InvalidateToken(token)
+		err := tokenService.InvalidateToken(context.Background(),token)
 
 		assert.NoError(t, err)
 		mockTokenRepo.AssertExpectations(t)
@@ -213,7 +214,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", validToken, mock.AnythingOfType("time.Time")).
 			Return(expectedError)
 
-		err := tokenService.InvalidateToken(validToken)
+		err := tokenService.InvalidateToken(context.Background(),validToken)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to add token to blacklist")
@@ -239,7 +240,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", validToken, mock.AnythingOfType("time.Time")).
 			Return(expectedError)
 
-		err := tokenService.InvalidateToken(validToken)
+		err := tokenService.InvalidateToken(context.Background(),validToken)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to add token to blacklist")
@@ -300,7 +301,7 @@ func TestTokenService_AddToBlacklist_TableDriven(t *testing.T) {
 				tc.setupMocks(mockRepo)
 			}
 
-			err := tokenService.AddToBlacklist(tc.token, tc.expiry)
+			err := tokenService.AddToBlacklist(context.Background(),tc.token, tc.expiry)
 
 			if tc.expectedError {
 				assert.Error(t, err)
@@ -369,7 +370,7 @@ func TestTokenService_IsInBlacklist_TableDriven(t *testing.T) {
 				tc.setupMocks(mockRepo)
 			}
 
-			result, err := tokenService.IsInBlacklist(tc.token)
+			result, err := tokenService.IsInBlacklist(context.Background(),tc.token)
 
 			if tc.expectedError {
 				assert.Error(t, err)
@@ -399,7 +400,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 		})
 		mockTokenRepo.On("IsInBlacklist", token).Return(false, nil)
 
-		err := tokenService.ValidateTokenWithBlacklist(token)
+		err := tokenService.ValidateTokenWithBlacklist(context.Background(),token)
 
 		assert.NoError(t, err)
 		mockTokenRepo.AssertExpectations(t)
@@ -415,7 +416,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", token).Return(true, nil)
 
-		err := tokenService.ValidateTokenWithBlacklist(token)
+		err := tokenService.ValidateTokenWithBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Equal(t, ErrTokenRevoked, err)
@@ -430,7 +431,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", token).Return(false, expectedError)
 
-		err := tokenService.ValidateTokenWithBlacklist(token)
+		err := tokenService.ValidateTokenWithBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to check blacklist")
@@ -447,7 +448,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 		// })
 		mockTokenRepo.On("IsInBlacklist", invalidToken).Return(false, nil)
 
-		err := tokenService.ValidateTokenWithBlacklist(invalidToken)
+		err := tokenService.ValidateTokenWithBlacklist(context.Background(),invalidToken)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token validation failed")
@@ -469,7 +470,7 @@ func TestTokenService_ValidateRefreshTokenWithBlacklist(t *testing.T) {
 		})
 		mockTokenRepo.On("IsInBlacklist", token).Return(false, nil)
 
-		err := tokenService.ValidateRefreshTokenWithBlacklist(token)
+		err := tokenService.ValidateRefreshTokenWithBlacklist(context.Background(),token)
 
 		assert.NoError(t, err)
 		mockTokenRepo.AssertExpectations(t)
@@ -483,7 +484,7 @@ func TestTokenService_ValidateRefreshTokenWithBlacklist(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", token).Return(true, nil)
 
-		err := tokenService.ValidateRefreshTokenWithBlacklist(token)
+		err := tokenService.ValidateRefreshTokenWithBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Equal(t, ErrTokenRevoked, err)
@@ -498,7 +499,7 @@ func TestTokenService_ValidateRefreshTokenWithBlacklist(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", token).Return(false, expectedError)
 
-		err := tokenService.ValidateRefreshTokenWithBlacklist(token)
+		err := tokenService.ValidateRefreshTokenWithBlacklist(context.Background(),token)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to check blacklist")
@@ -512,7 +513,7 @@ func TestTokenService_ValidateRefreshTokenWithBlacklist(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", invalidToken).Return(false, nil)
 
-		err := tokenService.ValidateRefreshTokenWithBlacklist(invalidToken)
+		err := tokenService.ValidateRefreshTokenWithBlacklist(context.Background(),invalidToken)
 
 		assert.Error(t, err)
 		mockTokenRepo.AssertExpectations(t)
@@ -641,7 +642,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", refreshToken, mock.AnythingOfType("time.Time")).Return(nil)
 		mockUserRepo.On("GetUserByID", "test_user_id").Return(user, nil)
 
-		newTokens, err := tokenService.RefreshToken(refreshToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),refreshToken)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, newTokens)
@@ -660,7 +661,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", refreshToken).Return(true, nil)
 
-		newTokens, err := tokenService.RefreshToken(refreshToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, newTokens)
@@ -677,7 +678,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", refreshToken).Return(false, expectedError)
 
-		newTokens, err := tokenService.RefreshToken(refreshToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, newTokens)
@@ -693,7 +694,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 
 		mockTokenRepo.On("IsInBlacklist", invalidToken).Return(false, nil)
 
-		newTokens, err := tokenService.RefreshToken(invalidToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),invalidToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, newTokens)
@@ -719,7 +720,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		mockTokenRepo.On("AddToBlacklist", refreshToken, mock.AnythingOfType("time.Time")).Return(nil)
 		mockUserRepo.On("GetUserByID", "test_user_id").Return(nil, expectedError)
 
-		newTokens, err := tokenService.RefreshToken(refreshToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, newTokens)
@@ -746,7 +747,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 		mockTokenRepo.On("IsInBlacklist", refreshToken).Return(false, nil)
 		mockTokenRepo.On("AddToBlacklist", refreshToken, mock.AnythingOfType("time.Time")).Return(blacklistError)
 
-		newTokens, err := tokenService.RefreshToken(refreshToken)
+		newTokens, err := tokenService.RefreshToken(context.Background(),refreshToken)
 
 		assert.Error(t, err)
 		assert.Nil(t, newTokens)

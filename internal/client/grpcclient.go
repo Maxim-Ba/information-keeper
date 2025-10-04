@@ -39,7 +39,7 @@ func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
 		artifactClient: proto.NewArtifactServiceClient(conn),
 		TokenManager:   &TokenManager{},
 		healthClient:   grpc_health_v1.NewHealthClient(conn),
-		maxRetries: 2, // TODO from cfg
+		maxRetries:     2, // TODO from cfg
 	}, nil
 }
 
@@ -50,17 +50,17 @@ func (c *GRPCClient) Close() {
 }
 func (c *GRPCClient) HealthCheck(ctx context.Context) error {
 	resp, err := c.healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{
-		Service: "", 
+		Service: "",
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	
+
 	if resp.Status != grpc_health_v1.HealthCheckResponse_SERVING {
 		return fmt.Errorf("service not serving, status: %v", resp.Status)
 	}
-	
+
 	return nil
 }
 func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.LoginUserResponse, error) {
@@ -73,7 +73,7 @@ func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.
 	logger.Info(fmt.Sprintf("GRPCClient Login login:%s, password:%s", login, password))
 	resp, err := c.authClient.Login(ctx, req)
 
-	if err != nil  {
+	if err != nil {
 		logger.Error(fmt.Sprintf("GRPCClient Login %v", err))
 		return resp, err
 
@@ -97,24 +97,39 @@ func (c *GRPCClient) Register(ctx context.Context, login, password, email string
 	return c.authClient.Register(ctx, req)
 }
 
-func (c *GRPCClient) RefreshToken(ctx context.Context, refreshToken string) (*proto.LoginUserResponse, error) {
+func (c *GRPCClient) RefreshToken(ctx context.Context) (*proto.LoginUserResponse, error) {
 	req := &proto.RefreshTokenRequest{
-		RefreshToken: refreshToken,
+		RefreshToken: c.TokenManager.GetRefreshToken(),
 	}
 
 	return c.authClient.RefreshToken(ctx, req)
 }
 
-func (c *GRPCClient) Logout(ctx context.Context, accessToken string) (*proto.LogoutResponse, error) {
+func (c *GRPCClient) Logout(ctx context.Context) (*proto.LogoutResponse, error) {
+	var resp *proto.LogoutResponse
+	var err error
 	req := &proto.LogoutRequest{
-		AccessToken: accessToken,
+		AccessToken:  c.TokenManager.GetAccessToken(),
+		RefreshToken: c.TokenManager.GetRefreshToken(),
 	}
 
-	return c.authClient.Logout(ctx, req)
+	logger.Info("Токены перед logout", "accessToken", req.AccessToken, "refreshToken", req.RefreshToken)
+
+	operation := func(ctx context.Context) error {
+		ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+		resp, err = c.authClient.Logout(ctxWithToken, req)
+		return err
+	}
+
+	if err := c.executeWithTokenRetry(ctx, operation); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
-func (c *GRPCClient) ChangePassword(ctx context.Context, accessToken string) (*proto.ChangePasswordResponse, error) {
+func (c *GRPCClient) ChangePassword(ctx context.Context) (*proto.ChangePasswordResponse, error) {
 	req := &proto.ChangePasswordRequest{
-		AccessToken: accessToken,
+		AccessToken: c.TokenManager.GetAccessToken(),
 	}
 
 	return c.authClient.ChangePassword(ctx, req)
@@ -137,7 +152,7 @@ func (c *GRPCClient) SendEmailConfirmation(ctx context.Context, email string) (*
 }
 
 // Artifact methods
-func (c *GRPCClient) CreateArtifact(ctx context.Context, accessToken string, req *proto.CreateArtifactRequest) (*proto.CreateArtifactResponse, error) {
+func (c *GRPCClient) CreateArtifact(ctx context.Context, req *proto.CreateArtifactRequest) (*proto.CreateArtifactResponse, error) {
 	var resp *proto.CreateArtifactResponse
 	var err error
 
@@ -173,7 +188,7 @@ func (c *GRPCClient) GetArtifact(ctx context.Context, artifactID string) (*proto
 	return resp, nil
 }
 
-func (c *GRPCClient) ListArtifacts(ctx context.Context, accessToken string, page, onPage int32, typeFilter proto.ArtifactTypeEnum) (*proto.ListArtifactsResponse, error) {
+func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, typeFilter proto.ArtifactTypeEnum) (*proto.ListArtifactsResponse, error) {
 	var resp *proto.ListArtifactsResponse
 	var err error
 
@@ -248,7 +263,8 @@ func (c *GRPCClient) GetWithOTP(ctx context.Context, artifactID string) (*proto.
 
 }
 
-func (c *GRPCClient) Sync(ctx context.Context, accessToken, clientID string, lastSyncTime int64) (proto.ArtifactService_SyncClient, error) {
+func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int64) (proto.ArtifactService_SyncClient, error) {
+	accessToken := c.TokenManager.GetAccessToken()
 	ctx = c.withAuthToken(ctx, accessToken)
 
 	// Создаем потоковый клиент
@@ -273,12 +289,11 @@ func (c *GRPCClient) Sync(ctx context.Context, accessToken, clientID string, las
 // обертка для работы с синхронизацией
 func (c *GRPCClient) SyncWithHandler(
 	ctx context.Context,
-	accessToken,
 	clientID string,
 	lastSyncTime int64,
 	eventHandler func(*proto.SyncEvent) error) error {
 
-	stream, err := c.Sync(ctx, accessToken, clientID, lastSyncTime)
+	stream, err := c.Sync(ctx, clientID, lastSyncTime)
 	if err != nil {
 		return err
 	}
@@ -321,13 +336,22 @@ func (c *GRPCClient) SyncWithHandler(
 
 // Helper method to add auth token to context
 func (c *GRPCClient) withAuthToken(ctx context.Context, token string) context.Context {
-	if token != "" {
-		md := metadata.Pairs("authorization", "Bearer "+token)
-		return metadata.NewOutgoingContext(ctx, md)
+	if token == "" {
+		slog.Warn("Attempting to create context with empty token")
+		return ctx
 	}
-	return ctx
-}
 
+	md := metadata.New(map[string]string{
+		"authorization": "Bearer " + token,
+	})
+
+	// Объединяем с существующими метаданными, если они есть
+	if existingMD, ok := metadata.FromOutgoingContext(ctx); ok {
+		md = metadata.Join(existingMD, md)
+	}
+
+	return metadata.NewOutgoingContext(ctx, md)
+}
 
 func (c *GRPCClient) refreshTokens(ctx context.Context) error {
 	refreshToken := c.TokenManager.GetRefreshToken()

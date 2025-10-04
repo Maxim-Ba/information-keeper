@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
+	"github.com/Maxim-Ba/information-keeper/internal/server/interceptors"
 	"github.com/Maxim-Ba/information-keeper/internal/server/services"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	pb "github.com/Maxim-Ba/information-keeper/pkg/proto"
@@ -41,14 +42,19 @@ type AuthServiceInterface interface {
 	SendEmailConfirmation(ctx context.Context, email string) error
 	PasswordServiceInterface
 }
-
+type TokenKeeper interface{
+	ValidateTokenWithBlacklist(ctx context.Context, token string) error
+ GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error)
+}
 type GRPCServer struct {
 	server          *grpc.Server
 	artifactService interface{}
 }
 
-func NewGRPCServer(authService AuthServiceInterface, artifactService interface{}) *GRPCServer {
-	grpcServer := grpc.NewServer()
+func NewGRPCServer(authService AuthServiceInterface, artifactService interface{}, tokenService TokenKeeper) *GRPCServer {
+		authInterceptor := interceptors.AuthInterceptor(tokenService)
+
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor),)
 
 	authServer := &AuthServer{authService: authService}
 	artifactServer := &ArtifactServer{}

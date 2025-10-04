@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -22,7 +23,13 @@ type TokenService struct {
 
 // Remove implements TokenServiceInterface.
 func (s *TokenService) Remove(ctx context.Context,token *JWTToken) error {
-	panic("unimplemented")
+	if err := s.InvalidateRefreshToken(ctx,token.RefreshToken); err != nil {
+		return fmt.Errorf("failed to invalidate refresh token: %w", err)
+	}
+	if err := s.InvalidateToken(ctx,token.AcssToken, ); err != nil {
+		return fmt.Errorf("failed to invalidate token: %w", err)
+	}
+	return nil
 }
 
 type UserRepositoryInterface interface {
@@ -46,12 +53,6 @@ func NewTokenService(
 		config: config, userRepository: userRepository, tokenRepository: tokenRepository}
 }
 
-func (s *TokenService) Logout(ctx context.Context,token *JWTToken) error {
-	if err := s.InvalidateToken(ctx,token.RefreshToken); err != nil {
-		return fmt.Errorf("failed to invalidate token: %w", err)
-	}
-	return nil
-}
 
 func (s *TokenService) AddToBlacklist(ctx context.Context, token string, expiry time.Time) error {
 	if s.tokenRepository == nil {
@@ -69,7 +70,8 @@ func (s *TokenService) IsInBlacklist(ctx context.Context,token string) (bool, er
 }
 
 // Add token to blacklist
-func (s *TokenService) InvalidateToken(ctx context.Context,token string) error {
+func (s *TokenService) InvalidateToken(ctx context.Context,token string,) error {
+	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
 	// Парсим токен, чтобы получить время истечения
 	claims, err := s.validateToken(token, false)
 	if err != nil {
@@ -83,7 +85,21 @@ func (s *TokenService) InvalidateToken(ctx context.Context,token string) error {
 
 	return nil
 }
+func (s *TokenService) InvalidateRefreshToken(ctx context.Context,token string) error {
+	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
+	// Парсим токен, чтобы получить время истечения
+	claims, err := s.validateToken(token, true)
+	if err != nil {
+		return fmt.Errorf("failed to parse token for invalidation: %w", err)
+	}
 
+	// Добавляем в черный список через репозиторий
+	if err := s.AddToBlacklist(ctx,token, claims.ExpiresAt.Time); err != nil {
+		return fmt.Errorf("failed to add token to blacklist: %w", err)
+	}
+
+	return nil
+}
 // ValidateTokenWithBlacklist checks if token is valid and not in blacklist
 func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context,token string) error {
 	// Сначала проверяем в черном списке

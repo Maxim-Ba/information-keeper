@@ -18,6 +18,7 @@ type authModel struct {
 	isLogin    bool
 	submitting bool
 	err        error
+	showError  bool
 }
 
 func newAuthModel() authModel {
@@ -61,6 +62,9 @@ func (m authModel) Update(msg tea.Msg) (authModel, tea.Cmd) {
 				if m.submitting {
 					return m, nil
 				}
+				// Сбрасываем ошибку при новой попытке
+				m.err = nil
+				m.showError = false
 				return m, m.submitAuth()
 			}
 
@@ -92,6 +96,9 @@ func (m authModel) Update(msg tea.Msg) (authModel, tea.Cmd) {
 		case tea.KeyCtrlT:
 			// Переключение между логином и регистрацией
 			m.isLogin = !m.isLogin
+			// Сбрасываем ошибку при переключении режима
+			m.err = nil
+			m.showError = false
 			if m.isLogin && len(m.inputs) > 2 {
 				m.inputs = m.inputs[:2]
 			} else if !m.isLogin && len(m.inputs) == 2 {
@@ -102,7 +109,20 @@ func (m authModel) Update(msg tea.Msg) (authModel, tea.Cmd) {
 				m.inputs = append(m.inputs, emailInput)
 			}
 			return m, nil
+		case tea.KeyEscape, tea.KeyBackspace:
+			// Скрываем ошибку при нажатии Escape или Backspace
+			if m.err != nil {
+				m.err = nil
+				m.showError = false
+				return m, nil
+			}
 		}
+	case errorMsg:
+		// Получаем ошибку и устанавливаем флаг отображения
+		logger.Error("Update showError =")
+		m.err = error(msg)
+		m.showError = true
+		return m, nil
 	}
 
 	// Обновляем поля ввода
@@ -187,12 +207,22 @@ func (m authModel) View() string {
 		toggleText = "Уже есть аккаунт? [Ctrl+T] - Вход"
 	}
 
+	// Добавляем отображение ошибки, если она есть и нужно показывать
+	errorSection := ""
+	if m.err != nil && m.showError {
+		errorSection = fmt.Sprintf("\n\n%s\n%s", 
+			errorStyle.Render("Ошибка:"), 
+			errorStyle.Render(m.err.Error()+"\n[Esc] - Скрыть ошибку"),
+		)
+	}
+
 	return fmt.Sprintf(
-		"%s\n\n%s\n\n%s\n%s\n\n%s",
+		"%s\n\n%s\n\n%s\n%s\n%s\n\n%s",
 		titleStyle.Render(title),
 		lipgloss.JoinVertical(lipgloss.Left, fields...),
 		actionBtn,
+		errorSection,
 		helpStyle.Render(toggleText),
-		helpStyle.Render("Ctrl+C - Выход"),
+		helpStyle.Render("Ctrl+C - Выход | Esc - Скрыть ошибку"),
 	)
 }

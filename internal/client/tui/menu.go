@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -52,7 +53,8 @@ func (m mainMenuModel) handleSelection() tea.Cmd {
 		case 2: // Настройки
 			return navigateToMsg{state: settingsState}
 		case 3: // Выйти
-			return tea.Quit
+		logger.Info("Выход из приложения")
+			return logoutMsg{}
 		}
 		return nil
 	}

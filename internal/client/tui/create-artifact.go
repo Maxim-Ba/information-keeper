@@ -108,7 +108,7 @@ func (m createArtifactModel) submitArtifact() tea.Cmd {
 		// TODO: Парсинг expireHours
 
 		ctx := context.Background()
-		resp, err := globalClient.CreateArtifact(ctx, globalClient.TokenManager.GetAccessToken(), req)
+		resp, err := globalClient.CreateArtifact(ctx, req)
 		if err != nil {
 			return errorMsg(fmt.Errorf("Ошибка создания артефакта: %v", err))
 		}

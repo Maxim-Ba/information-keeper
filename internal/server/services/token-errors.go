@@ -12,4 +12,6 @@ var (
 	ErrTokenValidationFailed   = errors.New("token validation failed")
 	ErrInvalidTokenClaims      = errors.New("invalid token claims")
 	ErrInvalidTokenType        = errors.New("invalid token type")
+	ErrAuthTokenNotProvided    = errors.New("authorization token not provided")
+	ErrMetaDataNotProvided     = errors.New("meta data token not provided")
 )

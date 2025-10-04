@@ -3,7 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
@@ -255,4 +258,22 @@ func (s *TokenService) validateToken(tokenString string, isRefresh bool) (*Custo
 	}
 
 	return nil, fmt.Errorf("invalid token claims")
+}
+
+func (s *TokenService)  GetAccessTokenFromContext(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return "", ErrMetaDataNotProvided
+		}
+		tokens := md["authorization"]
+		logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
+		if len(tokens) == 0 {
+			return "", ErrAuthTokenNotProvided
+		}
+		token := strings.TrimPrefix(tokens[0], "Bearer ")
+		if err := s.ValidateTokenWithBlacklist(ctx, token); err != nil {
+			logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
+			return "", ErrInvalidToken
+		}
+		return token, nil
 }

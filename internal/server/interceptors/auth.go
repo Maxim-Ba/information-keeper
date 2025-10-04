@@ -3,19 +3,18 @@ package interceptors
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 type TokenKeeper interface {
 	ValidateTokenWithBlacklist(ctx context.Context, token string) error
 	GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error)
+	GetAccessTokenFromContext(ctx context.Context) (string, error)
 }
 
 func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
@@ -29,20 +28,26 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, status.Error(codes.Unauthenticated, "metadata not provided")
+		// md, ok := metadata.FromIncomingContext(ctx)
+		// if !ok {
+		// 	return nil, status.Error(codes.Unauthenticated, "metadata not provided")
+		// }
+		// tokens := md["authorization"]
+		// logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
+		// if len(tokens) == 0 {
+		// 	return nil, status.Error(codes.Unauthenticated, "authorization token not provided")
+		// }
+		// token := strings.TrimPrefix(tokens[0], "Bearer ")
+		// if err := tokenService.ValidateTokenWithBlacklist(ctx, token); err != nil {
+		// 	logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
+		// 	return nil, status.Error(codes.Unauthenticated, "invalid token")
+		// }
+		token, err := tokenService.GetAccessTokenFromContext(ctx)
+		if err != nil {
+			
+			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		tokens := md["authorization"]
-		logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
-		if len(tokens) == 0 {
-			return nil, status.Error(codes.Unauthenticated, "authorization token not provided")
-		}
-		token := strings.TrimPrefix(tokens[0], "Bearer ")
-		if err := tokenService.ValidateTokenWithBlacklist(ctx, token); err != nil {
-			logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
-			return nil, status.Error(codes.Unauthenticated, "invalid token")
-		}
+
 		user, err := tokenService.GetUserFromAcssToken(token)
 		if err != nil {
 			logger.Error(fmt.Sprintf("AuthInterceptor failed to get user from token: %v", err))
@@ -55,4 +60,5 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 
 	}
+
 }

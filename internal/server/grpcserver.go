@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 
+	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
 	"github.com/Maxim-Ba/information-keeper/internal/server/interceptors"
 	"github.com/Maxim-Ba/information-keeper/internal/server/services"
@@ -19,12 +21,16 @@ import (
 )
 
 type AuthServer struct {
-	authService AuthServiceInterface
+	authService  AuthServiceInterface
+	tokenService TokenKeeper
 
 	pb.UnimplementedAuthServer
 }
 
 type ArtifactServer struct {
+	artifactService ArtifactRW
+	tokenService    TokenKeeper
+
 	pb.UnimplementedArtifactServiceServer
 }
 type HealthServer struct {
@@ -42,22 +48,38 @@ type AuthServiceInterface interface {
 	SendEmailConfirmation(ctx context.Context, email string) error
 	PasswordServiceInterface
 }
-type TokenKeeper interface{
+type TokenKeeper interface {
 	ValidateTokenWithBlacklist(ctx context.Context, token string) error
- GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error)
+	GetAccessTokenFromContext(ctx context.Context) (string, error)
+	 GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error) 
+}
+
+
+
+type ArtifactReader interface {
+	GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error)
+	GetArtifactByID(ctx context.Context, userID string, id string) (*domain.Artifact, error)
+}
+type ArtifactWriter interface {
+	CreateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error
+	UpdateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error
+	DeleteArtifact(ctx context.Context, userID string, id string) error
+}
+type ArtifactRW interface {
+	ArtifactReader
+	ArtifactWriter
 }
 type GRPCServer struct {
-	server          *grpc.Server
-	artifactService interface{}
+	server *grpc.Server
 }
 
-func NewGRPCServer(authService AuthServiceInterface, artifactService interface{}, tokenService TokenKeeper) *GRPCServer {
-		authInterceptor := interceptors.AuthInterceptor(tokenService)
+func NewGRPCServer(authService AuthServiceInterface, artifactService ArtifactRW, tokenService TokenKeeper) *GRPCServer {
+	authInterceptor := interceptors.AuthInterceptor(tokenService)
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor),)
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor))
 
-	authServer := &AuthServer{authService: authService}
-	artifactServer := &ArtifactServer{}
+	authServer := &AuthServer{authService: authService, tokenService: tokenService}
+	artifactServer := &ArtifactServer{artifactService: artifactService, tokenService: tokenService}
 	healthServer := health.NewServer()
 
 	pb.RegisterAuthServer(grpcServer, authServer)
@@ -66,11 +88,9 @@ func NewGRPCServer(authService AuthServiceInterface, artifactService interface{}
 
 	healthServer.SetServingStatus("auth", grpc_health_v1.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("artifact", grpc_health_v1.HealthCheckResponse_SERVING)
-	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING) 
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	return &GRPCServer{
 		server: grpcServer,
-
-		artifactService: artifactService,
 	}
 }
 
@@ -87,14 +107,13 @@ func (s *GRPCServer) Stop() {
 	s.server.GracefulStop()
 }
 
-
-
 func (s *HealthServer) Check(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
 	slog.Info("HealthServer Check")
 	return &pb.HealthCheckResponse{
 		Status: "SERVING",
 	}, nil
 }
+
 // Реализация методов Auth сервиса
 func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
 
@@ -102,25 +121,25 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 	jwt, err := s.authService.Login(ctx, req.User.Login, req.User.Password)
 	if err != nil {
 		if err != nil {
-        logger.Error("Ошибка при авторизации", 
-            slog.String("error", err.Error()),
-            slog.String("login", req.User.Login),
-        )
-        
-        // Определяем appropriate gRPC код ошибки
-        var grpcCode codes.Code
-        switch {
-        case errors.Is(err, services.ErrInvalidCredentials):
-            grpcCode = codes.Unauthenticated
-        case errors.Is(err, services.ErrUserNotFound):
-            grpcCode = codes.NotFound
-      
-        default:
-            grpcCode = codes.Internal
-        }
-        
-        return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
-    }
+			logger.Error("Ошибка при авторизации",
+				slog.String("error", err.Error()),
+				slog.String("login", req.User.Login),
+			)
+
+			// Определяем appropriate gRPC код ошибки
+			var grpcCode codes.Code
+			switch {
+			case errors.Is(err, services.ErrInvalidCredentials):
+				grpcCode = codes.Unauthenticated
+			case errors.Is(err, services.ErrUserNotFound):
+				grpcCode = codes.NotFound
+
+			default:
+				grpcCode = codes.Internal
+			}
+
+			return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
+		}
 	}
 	return &pb.LoginUserResponse{
 		RefreshToken: jwt.RefreshToken,
@@ -198,11 +217,31 @@ func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactReq
 }
 
 func (s *ArtifactServer) ListArtifacts(ctx context.Context, req *pb.ListArtifactsRequest) (*pb.ListArtifactsResponse, error) {
-	// TODO: Реализовать получение списка артефактов
 	logger.Info("AuthServer ListArtifacts")
+	token, err := s.tokenService.GetAccessTokenFromContext(ctx)
+	if err != nil {
+		logger.Error(fmt.Sprintf("AuthInterceptor failed to get user from token: %v", err))
 
+		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
+	}
+	user, err := s.tokenService.GetUserFromAcssToken(token)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
+	}
+	artifacts,err:=  s.artifactService.GetArtifacts(ctx, user.ID, req.Page, req.OnPage)
+if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get artifacts: %v", err))
+		return nil, status.Error(codes.Internal, "failed to get artifacts")
+	}
+	pbArtifacts := make([]*pb.Artifact, 0, len(artifacts))
+	for _, artifact := range artifacts {
+		pbArtifact := domain.DomainToPBArtifact(&artifact)
+		pbArtifacts = append(pbArtifacts, pbArtifact)
+	}
+	
 	return &pb.ListArtifactsResponse{
-		Artifacts: []*pb.Artifact{},
+		Artifacts: pbArtifacts,
 	}, nil
 }
 

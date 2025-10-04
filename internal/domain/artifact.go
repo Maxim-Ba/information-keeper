@@ -3,6 +3,8 @@ package domain
 import (
 	"time"
 
+	pb "github.com/Maxim-Ba/information-keeper/pkg/proto"
+
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
 )
 
@@ -53,3 +55,20 @@ func ArtifactDTOToDomain(dto dto.ArtifactDTO) Artifact {
         Link:     dto.Link,
     }
 }
+func DomainToPBArtifact(artifact *Artifact) *pb.Artifact {
+	if artifact == nil {
+		return nil
+	} else {
+		return &pb.Artifact{
+			Id:        artifact.ID,
+		OwnerId: artifact.OwerID,
+		CreatedAt: artifact.CreatedAt.Unix(),
+		UpdatedAt: artifact.UpdatedAt.Unix(),
+		ExpiredAt: artifact.ExpiredAt.Unix(),
+			
+		Link: artifact.Link,
+		MetaInfo: artifact.MetaInfo,
+			// Type: ,
+		
+		}
+	}}

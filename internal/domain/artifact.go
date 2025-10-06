@@ -10,7 +10,7 @@ import (
 
 type Artifact struct {
 	ID        string       `json:"id" db:"id"`
-	OwerID    string       `json:"owner_id" db:"owner_id"`
+	OwnerID    string       `json:"owner_id" db:"owner_id"`
 	CreatedAt time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at" db:"updated_at"`
 	ExpiredAt time.Time    `json:"expired_at" db:"expired_at"`
@@ -27,7 +27,7 @@ type ArtifactType struct {
 func DomainToArtifactDTO(artifact *Artifact) dto.ArtifactDTO {
     return dto.ArtifactDTO{
         ID:        artifact.ID,
-        OwerID:    artifact.OwerID,
+        OwerID:    artifact.OwnerID,
         CreatedAt: artifact.CreatedAt,
         UpdatedAt: artifact.UpdatedAt,
         ExpiredAt: artifact.ExpiredAt,
@@ -43,7 +43,7 @@ func DomainToArtifactDTO(artifact *Artifact) dto.ArtifactDTO {
 func ArtifactDTOToDomain(dto dto.ArtifactDTO) Artifact {
     return Artifact{
         ID:        dto.ID,
-        OwerID:    dto.OwerID,
+        OwnerID:    dto.OwerID,
         CreatedAt: dto.CreatedAt,
         UpdatedAt: dto.UpdatedAt,
         ExpiredAt: dto.ExpiredAt,
@@ -61,7 +61,7 @@ func DomainToPBArtifact(artifact *Artifact) *pb.Artifact {
 	} else {
 		return &pb.Artifact{
 			Id:        artifact.ID,
-		OwnerId: artifact.OwerID,
+		OwnerId: artifact.OwnerID,
 		CreatedAt: artifact.CreatedAt.Unix(),
 		UpdatedAt: artifact.UpdatedAt.Unix(),
 		ExpiredAt: artifact.ExpiredAt.Unix(),

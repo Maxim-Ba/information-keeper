@@ -172,6 +172,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	logger.Info("Обновление модели", "msg", msg)
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -236,6 +237,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case deleteArtifactMsg:
 		// Удаление артефакта
 		return m, m.deleteArtifact(msg.artifact)
+		
+	//  ДЛЯ ОБРАБОТКИ РЕЗУЛЬТАТА СОЗДАНИЯ
+	case artifactCreateResultMsg:
+		logger.Info("Обработка результата создания артефакта", "success", msg.success)
+		if msg.success {
+			m.successMessage = msg.message
+			// Возвращаемся в главное меню после успешного создания
+			m.state = mainMenuState
+			m.mainMenu = newMainMenuModel()
+			return m, tea.Tick(3*time.Second, func(time.Time) tea.Msg {
+				return clearMessageMsg{}
+			})
+		} else {
+			// Устанавливаем ошибку и сбрасываем флаг submitting
+			m.err = msg.error
+			if m.state == createArtifactState {
+				m.createArtifact.submitting = false
+			}
+			// Автоматически очищаем ошибку через 5 секунд
+			return m, tea.Tick(5*time.Second, func(time.Time) tea.Msg {
+				return clearMessageMsg{}
+			})
+		}
 	}
 
 	// Делегируем обновление текущему состоянию
@@ -264,6 +288,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	logger.Info("Рендер модели", "state", m.state)
+	
+	// Показываем ошибку или успешное сообщение поверх всего
 	if m.err != nil {
 		return errorStyle.Render(fmt.Sprintf("Ошибка: %v", m.err))
 	}

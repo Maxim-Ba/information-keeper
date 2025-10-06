@@ -81,6 +81,7 @@ func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.
 	logger.Info(fmt.Sprintf("GRPCClient Login resp:%v", resp))
 	c.TokenManager.SetTokens(resp.AccessToken, resp.RefreshToken)
 	logger.Info(fmt.Sprintf("GRPCClient Login c.TokenManager.GetAccessToken():%s", c.TokenManager.GetAccessToken()))
+	go c.SyncLoop(ctx)
 	return resp, err
 }
 
@@ -266,7 +267,9 @@ func (c *GRPCClient) GetWithOTP(ctx context.Context, artifactID string) (*proto.
 func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int64) (proto.ArtifactService_SyncClient, error) {
 	accessToken := c.TokenManager.GetAccessToken()
 	ctx = c.withAuthToken(ctx, accessToken)
-
+	if accessToken == "" {
+		return nil, errors.New("access token is required")
+	}
 	// Создаем потоковый клиент
 	stream, err := c.artifactClient.Sync(ctx)
 	if err != nil {
@@ -284,6 +287,74 @@ func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int
 	}
 
 	return stream, nil
+}
+func (c *GRPCClient) StartSync(ctx context.Context, clientID string, eventHandler func(*proto.SyncEvent) error) error {
+	var lastSyncTime int64
+	// Пытаемся получить время последней синхронизации 
+	// lastSyncTime = c.getLastSyncTime(clientID)
+
+	operation := func(ctx context.Context) error {
+		stream, err := c.Sync(ctx, clientID, lastSyncTime)
+		if err != nil {
+			return err
+		}
+
+		// Горутина для heartbeat
+		go c.sendHeartbeats(ctx, stream, clientID)
+
+		// Обработка входящих событий
+		for {
+			event, err := stream.Recv()
+			if err != nil {
+				return err
+			}
+
+			// Обновляем время последней синхронизации
+			if complete := event.GetSyncComplete(); complete != nil {
+				lastSyncTime = complete.SyncTime
+				// c.saveLastSyncTime(clientID, lastSyncTime)
+			}
+
+			// Передаем событие обработчику
+			if err := eventHandler(event); err != nil {
+				slog.Error("Error handling sync event", "error", err)
+				// Продолжаем получать события несмотря на ошибку обработки
+			}
+		}
+	}
+//TODO усли произошел логин то выходим из цыкла
+
+	// Бесконечный цикл переподключения
+	for {
+		err := c.executeWithTokenRetry(ctx, operation)
+		if err != nil && ctx.Err() == nil {
+			slog.Error("Sync stream disconnected, reconnecting...", "error", err)
+			time.Sleep(5 * time.Second) // Ждем перед переподключением
+			continue
+		}
+		return err
+	}
+}
+
+func (c *GRPCClient) sendHeartbeats(ctx context.Context, stream proto.ArtifactService_SyncClient, clientID string) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			heartbeat := &proto.SyncRequest{
+				ClientId:     clientID,
+				LastSyncTime: time.Now().Unix(),
+			}
+			if err := stream.Send(heartbeat); err != nil {
+				slog.Error("Failed to send heartbeat", "error", err)
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // обертка для работы с синхронизацией
@@ -423,4 +494,28 @@ func (c *GRPCClient) executeWithTokenRetry(ctx context.Context, operation func(c
 	}
 
 	return lastErr
+}
+
+func (c *GRPCClient) SyncLoop(ctx context.Context) {
+	err := c.StartSync(ctx, "client-1", func(event *proto.SyncEvent) error {
+		switch e := event.EventType.(type) {
+		case *proto.SyncEvent_ArtifactCreated:
+			fmt.Printf("New artifact created: %s\n", e.ArtifactCreated.Artifact.Id)
+			// Обновить UI
+		case *proto.SyncEvent_ArtifactUpdated:
+			fmt.Printf("Artifact updated: %s\n", e.ArtifactUpdated.Artifact.Id)
+			// Обновить UI
+		case *proto.SyncEvent_ArtifactDeleted:
+			fmt.Printf("Artifact deleted: %s\n", e.ArtifactDeleted.ArtifactId)
+			// Обновить UI
+		case *proto.SyncEvent_ClientConnected:
+			fmt.Printf("Other client connected: %s\n", e.ClientConnected.ClientId)
+		case *proto.SyncEvent_ClientDisconnected:
+			fmt.Printf("Other client disconnected: %s\n", e.ClientDisconnected.ClientId)
+		}
+		return nil
+	})
+	if err != nil {
+		slog.Error("Sync failed", "error", err)
+	}
 }

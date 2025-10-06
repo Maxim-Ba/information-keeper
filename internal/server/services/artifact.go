@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
+	eventidgen "github.com/Maxim-Ba/information-keeper/pkg/event-id-gen"
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
@@ -19,12 +21,12 @@ type ArtifactRepositoryInterface interface {
 	UpdateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error)
 	DeleteArtifact(ctx context.Context, id string) (*domain.Artifact, error)
 	GetArtifactByID(ctx context.Context, id string) (*domain.Artifact, error)
-	GetPresignedURL(ctx context.Context,id string) (string, error)
+	GetPresignedURL(ctx context.Context, id string) (string, error)
 }
 type SyncManagerInterface interface {
-	Subscribe(userID string, clientID string) chan proto.SyncEvent
+	Subscribe(userID string, clientID string) chan *proto.SyncEvent
 	Unsubscribe(userID string, clientID string)
-	Broadcast(userID string, event proto.SyncEvent)
+	Broadcast(userID string, event *proto.SyncEvent)
 }
 
 func NewArtifactService(
@@ -48,17 +50,29 @@ func (s *ArtifactService) GetArtifacts(ctx context.Context, userID string, page 
 }
 
 func (s *ArtifactService) CreateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error {
-	// Устанавливаем владельца и временные метки
-	artifact.OwerID = userID
+	artifact.OwnerID = userID
 	artifact.CreatedAt = time.Now()
 	artifact.UpdatedAt = time.Now()
-
+	logger.Info("ArtifactService CreateArtifact")
 	a, err := s.artifactRepository.CreateArtifact(ctx, artifact)
 	if err != nil {
+		logger.Error(err.Error())
 		return fmt.Errorf("ArtifactService CreateArtifact: %w", err)
 	}
 
-	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{})
+	// Отправляем событие синхронизации
+	pbArtifact := domain.DomainToPBArtifact(a)
+	s.syncManager.Broadcast(userID,
+		&proto.SyncEvent{
+			EventId:    eventidgen.GenerateEventID(),
+			Timestamp: time.Now().Unix(),
+			EventType: &proto.SyncEvent_ArtifactCreated{
+				ArtifactCreated: &proto.ArtifactCreatedEvent{
+					Artifact: pbArtifact,
+				},
+			},
+		},
+	)
 
 	return nil
 }
@@ -84,8 +98,15 @@ func (s *ArtifactService) UpdateArtifact(ctx context.Context, userID string, art
 		return fmt.Errorf("ArtifactService UpdateArtifact: %w", err)
 	}
 
-	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{
-		// TODO: add event
+	pbArtifact := domain.DomainToPBArtifact(a)
+	s.syncManager.Broadcast(userID, &proto.SyncEvent{
+		EventId:   eventidgen.GenerateEventID(),
+		Timestamp: time.Now().Unix(),
+		EventType: &proto.SyncEvent_ArtifactUpdated{
+			ArtifactUpdated: &proto.ArtifactUpdatedEvent{
+				Artifact: pbArtifact,
+			},
+		},
 	})
 
 	return nil
@@ -105,8 +126,14 @@ func (s *ArtifactService) DeleteArtifact(ctx context.Context, userID string, id 
 		return fmt.Errorf("ArtifactService DeleteArtifact: %w", err)
 	}
 
-	s.syncManager.Broadcast(a.OwerID, proto.SyncEvent{
-		// TODO: add event
+	s.syncManager.Broadcast(userID, &proto.SyncEvent{
+		EventId:    eventidgen.GenerateEventID(),
+		Timestamp: time.Now().Unix(),
+		EventType: &proto.SyncEvent_ArtifactDeleted{
+			ArtifactDeleted: &proto.ArtifactDeletedEvent{
+				ArtifactId: a.ID,
+			},
+		},
 	})
 
 	return nil
@@ -137,24 +164,23 @@ func (s *ArtifactService) GetWithOTP(ctx context.Context, userID string, id stri
 	return artifact, nil
 }
 func (s *ArtifactService) GetPresignedURL(ctx context.Context, userID string, id string) (string, error) {
-    artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
-    if err != nil {
-        return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
-    }
-    
-    if !s.isUsersArtifacts(userID, artifact) {
-        return "", ErrForbiddenAction
-    }
-    
-    url, err := s.artifactRepository.GetPresignedURL(ctx, id)
-    if err != nil {
-        return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
-    }
-    
-    return url, nil
+	artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
+	if err != nil {
+		return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
+	}
+
+	if !s.isUsersArtifacts(userID, artifact) {
+		return "", ErrForbiddenAction
+	}
+
+	url, err := s.artifactRepository.GetPresignedURL(ctx, id)
+	if err != nil {
+		return "", fmt.Errorf("ArtifactService GetPresignedURL: %w", err)
+	}
+
+	return url, nil
 }
 
 func (s *ArtifactService) isUsersArtifacts(userID string, artifact *domain.Artifact) bool {
-    return userID == artifact.OwerID
+	return userID == artifact.OwnerID
 }
-

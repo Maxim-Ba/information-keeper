@@ -12,6 +12,7 @@ import (
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/internal/server/s3client"
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 )
 
 type ArtifactRepository struct {
@@ -52,7 +53,7 @@ func (r *ArtifactRepository) GetArtifacts(ctx context.Context, userID string, pa
 
 		err := rows.Scan(
 			&artifact.ID,
-			&artifact.OwerID,
+			&artifact.OwnerID,
 			&artifact.CreatedAt,
 			&artifact.UpdatedAt,
 			&artifact.ExpiredAt,
@@ -73,22 +74,22 @@ func (r *ArtifactRepository) GetArtifacts(ctx context.Context, userID string, pa
 }
 
 func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error) {
+	logger.Info("ArtifactRepository Creating artifact")
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
-
+	//TODO обработка типа
 	// Если это файл, загружаем в S3
 	if artifact.Type.Id == 3 { // Предположим, что тип 3 = файл
 		if err := r.uploadFileToS3(ctx, artifact); err != nil {
 			return nil, err
 		}
 	}
-
 	query := `
-        INSERT INTO artifacts (id, owner_id, created_at, updated_at, expired_at, type_id, meta_info, link)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO artifacts (owner_id, created_at, updated_at, expired_at, type_id, meta_info, link)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, owner_id, created_at, updated_at, expired_at, type_id, meta_info, link
     `
 
@@ -96,8 +97,7 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 	var typeID int
 
 	err = tx.QueryRowContext(ctx, query,
-		artifact.ID,
-		artifact.OwerID,
+		artifact.OwnerID,
 		time.Now(),
 		time.Now(),
 		artifact.ExpiredAt,
@@ -106,7 +106,7 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 		artifact.Link,
 	).Scan(
 		&createdArtifact.ID,
-		&createdArtifact.OwerID,
+		&createdArtifact.OwnerID,
 		&createdArtifact.CreatedAt,
 		&createdArtifact.UpdatedAt,
 		&createdArtifact.ExpiredAt,
@@ -161,7 +161,7 @@ func (r *ArtifactRepository) UpdateArtifact(ctx context.Context, artifact *domai
 		artifact.ID,
 	).Scan(
 		&updatedArtifact.ID,
-		&updatedArtifact.OwerID,
+		&updatedArtifact.OwnerID,
 		&updatedArtifact.CreatedAt,
 		&updatedArtifact.UpdatedAt,
 		&updatedArtifact.ExpiredAt,
@@ -245,7 +245,7 @@ func (r *ArtifactRepository) GetArtifactByID(ctx context.Context, id string) (*d
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&artifact.ID,
-		&artifact.OwerID,
+		&artifact.OwnerID,
 		&artifact.CreatedAt,
 		&artifact.UpdatedAt,
 		&artifact.ExpiredAt,
@@ -281,7 +281,7 @@ func (r *ArtifactRepository) uploadFileToS3(ctx context.Context, artifact *domai
 
 	// Генерируем уникальный ключ для S3
 	s3Key := fmt.Sprintf("users/%s/artifacts/%s/%s",
-		artifact.OwerID, artifact.ID, fileMeta.FileName)
+		artifact.OwnerID, artifact.ID, fileMeta.FileName)
 
 	// Загружаем файл в S3
 	_, err := r.s3client.Upload(ctx, s3client.UploadInput{

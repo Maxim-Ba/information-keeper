@@ -933,6 +933,8 @@ type SyncEvent struct {
 	//	*SyncEvent_ArtifactUpdated
 	//	*SyncEvent_ArtifactDeleted
 	//	*SyncEvent_SyncComplete
+	//	*SyncEvent_ClientConnected
+	//	*SyncEvent_ClientDisconnected
 	EventType     isSyncEvent_EventType `protobuf_oneof:"event_type"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1025,6 +1027,24 @@ func (x *SyncEvent) GetSyncComplete() *SyncCompleteEvent {
 	return nil
 }
 
+func (x *SyncEvent) GetClientConnected() *ClientConnectedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*SyncEvent_ClientConnected); ok {
+			return x.ClientConnected
+		}
+	}
+	return nil
+}
+
+func (x *SyncEvent) GetClientDisconnected() *ClientDisconnectedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*SyncEvent_ClientDisconnected); ok {
+			return x.ClientDisconnected
+		}
+	}
+	return nil
+}
+
 type isSyncEvent_EventType interface {
 	isSyncEvent_EventType()
 }
@@ -1045,6 +1065,14 @@ type SyncEvent_SyncComplete struct {
 	SyncComplete *SyncCompleteEvent `protobuf:"bytes,6,opt,name=sync_complete,json=syncComplete,proto3,oneof"`
 }
 
+type SyncEvent_ClientConnected struct {
+	ClientConnected *ClientConnectedEvent `protobuf:"bytes,7,opt,name=client_connected,json=clientConnected,proto3,oneof"`
+}
+
+type SyncEvent_ClientDisconnected struct {
+	ClientDisconnected *ClientDisconnectedEvent `protobuf:"bytes,8,opt,name=client_disconnected,json=clientDisconnected,proto3,oneof"`
+}
+
 func (*SyncEvent_ArtifactCreated) isSyncEvent_EventType() {}
 
 func (*SyncEvent_ArtifactUpdated) isSyncEvent_EventType() {}
@@ -1052,6 +1080,10 @@ func (*SyncEvent_ArtifactUpdated) isSyncEvent_EventType() {}
 func (*SyncEvent_ArtifactDeleted) isSyncEvent_EventType() {}
 
 func (*SyncEvent_SyncComplete) isSyncEvent_EventType() {}
+
+func (*SyncEvent_ClientConnected) isSyncEvent_EventType() {}
+
+func (*SyncEvent_ClientDisconnected) isSyncEvent_EventType() {}
 
 type ArtifactCreatedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1237,6 +1269,238 @@ func (x *SyncCompleteEvent) GetEventsCount() int32 {
 	return 0
 }
 
+type ClientHello struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,2,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	ConnectTime   int64                  `protobuf:"varint,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientHello) Reset() {
+	*x = ClientHello{}
+	mi := &file_artifact_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientHello) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientHello) ProtoMessage() {}
+
+func (x *ClientHello) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientHello.ProtoReflect.Descriptor instead.
+func (*ClientHello) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ClientHello) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ClientHello) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
+func (x *ClientHello) GetConnectTime() int64 {
+	if x != nil {
+		return x.ConnectTime
+	}
+	return 0
+}
+
+type ClientAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventId       string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	Processed     bool                   `protobuf:"varint,2,opt,name=processed,proto3" json:"processed,omitempty"`
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientAck) Reset() {
+	*x = ClientAck{}
+	mi := &file_artifact_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientAck) ProtoMessage() {}
+
+func (x *ClientAck) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientAck.ProtoReflect.Descriptor instead.
+func (*ClientAck) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ClientAck) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *ClientAck) GetProcessed() bool {
+	if x != nil {
+		return x.Processed
+	}
+	return false
+}
+
+func (x *ClientAck) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ClientConnectedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,2,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	ConnectTime   int64                  `protobuf:"varint,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientConnectedEvent) Reset() {
+	*x = ClientConnectedEvent{}
+	mi := &file_artifact_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientConnectedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientConnectedEvent) ProtoMessage() {}
+
+func (x *ClientConnectedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientConnectedEvent.ProtoReflect.Descriptor instead.
+func (*ClientConnectedEvent) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ClientConnectedEvent) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ClientConnectedEvent) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
+func (x *ClientConnectedEvent) GetConnectTime() int64 {
+	if x != nil {
+		return x.ConnectTime
+	}
+	return 0
+}
+
+type ClientDisconnectedEvent struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ClientId       string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	DisconnectTime int64                  `protobuf:"varint,2,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ClientDisconnectedEvent) Reset() {
+	*x = ClientDisconnectedEvent{}
+	mi := &file_artifact_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientDisconnectedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientDisconnectedEvent) ProtoMessage() {}
+
+func (x *ClientDisconnectedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientDisconnectedEvent.ProtoReflect.Descriptor instead.
+func (*ClientDisconnectedEvent) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ClientDisconnectedEvent) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ClientDisconnectedEvent) GetDisconnectTime() int64 {
+	if x != nil {
+		return x.DisconnectTime
+	}
+	return 0
+}
+
 var File_artifact_proto protoreflect.FileDescriptor
 
 const file_artifact_proto_rawDesc = "" +
@@ -1304,14 +1568,16 @@ const file_artifact_proto_rawDesc = "" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"P\n" +
 	"\vSyncRequest\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12$\n" +
-	"\x0elast_sync_time\x18\x03 \x01(\x03R\flastSyncTime\"\xfd\x02\n" +
+	"\x0elast_sync_time\x18\x03 \x01(\x03R\flastSyncTime\"\xa0\x04\n" +
 	"\tSyncEvent\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12K\n" +
 	"\x10artifact_created\x18\x03 \x01(\v2\x1e.artifact.ArtifactCreatedEventH\x00R\x0fartifactCreated\x12K\n" +
 	"\x10artifact_updated\x18\x04 \x01(\v2\x1e.artifact.ArtifactUpdatedEventH\x00R\x0fartifactUpdated\x12K\n" +
 	"\x10artifact_deleted\x18\x05 \x01(\v2\x1e.artifact.ArtifactDeletedEventH\x00R\x0fartifactDeleted\x12B\n" +
-	"\rsync_complete\x18\x06 \x01(\v2\x1b.artifact.SyncCompleteEventH\x00R\fsyncCompleteB\f\n" +
+	"\rsync_complete\x18\x06 \x01(\v2\x1b.artifact.SyncCompleteEventH\x00R\fsyncComplete\x12K\n" +
+	"\x10client_connected\x18\a \x01(\v2\x1e.artifact.ClientConnectedEventH\x00R\x0fclientConnected\x12T\n" +
+	"\x13client_disconnected\x18\b \x01(\v2!.artifact.ClientDisconnectedEventH\x00R\x12clientDisconnectedB\f\n" +
 	"\n" +
 	"event_type\"F\n" +
 	"\x14ArtifactCreatedEvent\x12.\n" +
@@ -1323,7 +1589,24 @@ const file_artifact_proto_rawDesc = "" +
 	"artifactId\"S\n" +
 	"\x11SyncCompleteEvent\x12\x1b\n" +
 	"\tsync_time\x18\x01 \x01(\x03R\bsyncTime\x12!\n" +
-	"\fevents_count\x18\x02 \x01(\x05R\veventsCount*]\n" +
+	"\fevents_count\x18\x02 \x01(\x05R\veventsCount\"l\n" +
+	"\vClientHello\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1d\n" +
+	"\n" +
+	"user_agent\x18\x02 \x01(\tR\tuserAgent\x12!\n" +
+	"\fconnect_time\x18\x03 \x01(\x03R\vconnectTime\"Z\n" +
+	"\tClientAck\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1c\n" +
+	"\tprocessed\x18\x02 \x01(\bR\tprocessed\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"u\n" +
+	"\x14ClientConnectedEvent\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1d\n" +
+	"\n" +
+	"user_agent\x18\x02 \x01(\tR\tuserAgent\x12!\n" +
+	"\fconnect_time\x18\x03 \x01(\x03R\vconnectTime\"_\n" +
+	"\x17ClientDisconnectedEvent\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12'\n" +
+	"\x0fdisconnect_time\x18\x02 \x01(\x03R\x0edisconnectTime*]\n" +
 	"\x10ArtifactTypeEnum\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\b\n" +
 	"\x04TEXT\x10\x01\x12\t\n" +
@@ -1355,29 +1638,33 @@ func file_artifact_proto_rawDescGZIP() []byte {
 }
 
 var file_artifact_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_artifact_proto_goTypes = []any{
-	(ArtifactTypeEnum)(0),          // 0: artifact.ArtifactTypeEnum
-	(*Artifact)(nil),               // 1: artifact.Artifact
-	(*ArtifactType)(nil),           // 2: artifact.ArtifactType
-	(*CreateArtifactRequest)(nil),  // 3: artifact.CreateArtifactRequest
-	(*CreateArtifactResponse)(nil), // 4: artifact.CreateArtifactResponse
-	(*GetArtifactRequest)(nil),     // 5: artifact.GetArtifactRequest
-	(*GetArtifactResponse)(nil),    // 6: artifact.GetArtifactResponse
-	(*ListArtifactsRequest)(nil),   // 7: artifact.ListArtifactsRequest
-	(*ListArtifactsResponse)(nil),  // 8: artifact.ListArtifactsResponse
-	(*UpdateArtifactRequest)(nil),  // 9: artifact.UpdateArtifactRequest
-	(*UpdateArtifactResponse)(nil), // 10: artifact.UpdateArtifactResponse
-	(*DeleteArtifactRequest)(nil),  // 11: artifact.DeleteArtifactRequest
-	(*DeleteArtifactResponse)(nil), // 12: artifact.DeleteArtifactResponse
-	(*GetWithOTPRequest)(nil),      // 13: artifact.GetWithOTPRequest
-	(*GetWithOTPResponse)(nil),     // 14: artifact.GetWithOTPResponse
-	(*SyncRequest)(nil),            // 15: artifact.SyncRequest
-	(*SyncEvent)(nil),              // 16: artifact.SyncEvent
-	(*ArtifactCreatedEvent)(nil),   // 17: artifact.ArtifactCreatedEvent
-	(*ArtifactUpdatedEvent)(nil),   // 18: artifact.ArtifactUpdatedEvent
-	(*ArtifactDeletedEvent)(nil),   // 19: artifact.ArtifactDeletedEvent
-	(*SyncCompleteEvent)(nil),      // 20: artifact.SyncCompleteEvent
+	(ArtifactTypeEnum)(0),           // 0: artifact.ArtifactTypeEnum
+	(*Artifact)(nil),                // 1: artifact.Artifact
+	(*ArtifactType)(nil),            // 2: artifact.ArtifactType
+	(*CreateArtifactRequest)(nil),   // 3: artifact.CreateArtifactRequest
+	(*CreateArtifactResponse)(nil),  // 4: artifact.CreateArtifactResponse
+	(*GetArtifactRequest)(nil),      // 5: artifact.GetArtifactRequest
+	(*GetArtifactResponse)(nil),     // 6: artifact.GetArtifactResponse
+	(*ListArtifactsRequest)(nil),    // 7: artifact.ListArtifactsRequest
+	(*ListArtifactsResponse)(nil),   // 8: artifact.ListArtifactsResponse
+	(*UpdateArtifactRequest)(nil),   // 9: artifact.UpdateArtifactRequest
+	(*UpdateArtifactResponse)(nil),  // 10: artifact.UpdateArtifactResponse
+	(*DeleteArtifactRequest)(nil),   // 11: artifact.DeleteArtifactRequest
+	(*DeleteArtifactResponse)(nil),  // 12: artifact.DeleteArtifactResponse
+	(*GetWithOTPRequest)(nil),       // 13: artifact.GetWithOTPRequest
+	(*GetWithOTPResponse)(nil),      // 14: artifact.GetWithOTPResponse
+	(*SyncRequest)(nil),             // 15: artifact.SyncRequest
+	(*SyncEvent)(nil),               // 16: artifact.SyncEvent
+	(*ArtifactCreatedEvent)(nil),    // 17: artifact.ArtifactCreatedEvent
+	(*ArtifactUpdatedEvent)(nil),    // 18: artifact.ArtifactUpdatedEvent
+	(*ArtifactDeletedEvent)(nil),    // 19: artifact.ArtifactDeletedEvent
+	(*SyncCompleteEvent)(nil),       // 20: artifact.SyncCompleteEvent
+	(*ClientHello)(nil),             // 21: artifact.ClientHello
+	(*ClientAck)(nil),               // 22: artifact.ClientAck
+	(*ClientConnectedEvent)(nil),    // 23: artifact.ClientConnectedEvent
+	(*ClientDisconnectedEvent)(nil), // 24: artifact.ClientDisconnectedEvent
 }
 var file_artifact_proto_depIdxs = []int32{
 	0,  // 0: artifact.Artifact.type:type_name -> artifact.ArtifactTypeEnum
@@ -1393,27 +1680,29 @@ var file_artifact_proto_depIdxs = []int32{
 	18, // 10: artifact.SyncEvent.artifact_updated:type_name -> artifact.ArtifactUpdatedEvent
 	19, // 11: artifact.SyncEvent.artifact_deleted:type_name -> artifact.ArtifactDeletedEvent
 	20, // 12: artifact.SyncEvent.sync_complete:type_name -> artifact.SyncCompleteEvent
-	1,  // 13: artifact.ArtifactCreatedEvent.artifact:type_name -> artifact.Artifact
-	1,  // 14: artifact.ArtifactUpdatedEvent.artifact:type_name -> artifact.Artifact
-	3,  // 15: artifact.ArtifactService.CreateArtifact:input_type -> artifact.CreateArtifactRequest
-	5,  // 16: artifact.ArtifactService.GetArtifact:input_type -> artifact.GetArtifactRequest
-	7,  // 17: artifact.ArtifactService.ListArtifacts:input_type -> artifact.ListArtifactsRequest
-	9,  // 18: artifact.ArtifactService.UpdateArtifact:input_type -> artifact.UpdateArtifactRequest
-	11, // 19: artifact.ArtifactService.DeleteArtifact:input_type -> artifact.DeleteArtifactRequest
-	13, // 20: artifact.ArtifactService.GetWithOTP:input_type -> artifact.GetWithOTPRequest
-	15, // 21: artifact.ArtifactService.Sync:input_type -> artifact.SyncRequest
-	4,  // 22: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
-	6,  // 23: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
-	8,  // 24: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
-	10, // 25: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
-	12, // 26: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
-	14, // 27: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
-	16, // 28: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
-	22, // [22:29] is the sub-list for method output_type
-	15, // [15:22] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	23, // 13: artifact.SyncEvent.client_connected:type_name -> artifact.ClientConnectedEvent
+	24, // 14: artifact.SyncEvent.client_disconnected:type_name -> artifact.ClientDisconnectedEvent
+	1,  // 15: artifact.ArtifactCreatedEvent.artifact:type_name -> artifact.Artifact
+	1,  // 16: artifact.ArtifactUpdatedEvent.artifact:type_name -> artifact.Artifact
+	3,  // 17: artifact.ArtifactService.CreateArtifact:input_type -> artifact.CreateArtifactRequest
+	5,  // 18: artifact.ArtifactService.GetArtifact:input_type -> artifact.GetArtifactRequest
+	7,  // 19: artifact.ArtifactService.ListArtifacts:input_type -> artifact.ListArtifactsRequest
+	9,  // 20: artifact.ArtifactService.UpdateArtifact:input_type -> artifact.UpdateArtifactRequest
+	11, // 21: artifact.ArtifactService.DeleteArtifact:input_type -> artifact.DeleteArtifactRequest
+	13, // 22: artifact.ArtifactService.GetWithOTP:input_type -> artifact.GetWithOTPRequest
+	15, // 23: artifact.ArtifactService.Sync:input_type -> artifact.SyncRequest
+	4,  // 24: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
+	6,  // 25: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
+	8,  // 26: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
+	10, // 27: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
+	12, // 28: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
+	14, // 29: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
+	16, // 30: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
+	24, // [24:31] is the sub-list for method output_type
+	17, // [17:24] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_artifact_proto_init() }
@@ -1426,6 +1715,8 @@ func file_artifact_proto_init() {
 		(*SyncEvent_ArtifactUpdated)(nil),
 		(*SyncEvent_ArtifactDeleted)(nil),
 		(*SyncEvent_SyncComplete)(nil),
+		(*SyncEvent_ClientConnected)(nil),
+		(*SyncEvent_ClientDisconnected)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1433,7 +1724,7 @@ func file_artifact_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_artifact_proto_rawDesc), len(file_artifact_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   20,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

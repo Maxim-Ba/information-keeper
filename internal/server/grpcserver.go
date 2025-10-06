@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/internal/server/dto"
 	"github.com/Maxim-Ba/information-keeper/internal/server/interceptors"
 	"github.com/Maxim-Ba/information-keeper/internal/server/services"
+	eventidgen "github.com/Maxim-Ba/information-keeper/pkg/event-id-gen"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	pb "github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"google.golang.org/grpc"
@@ -30,6 +32,7 @@ type AuthServer struct {
 type ArtifactServer struct {
 	artifactService ArtifactRW
 	tokenService    TokenKeeper
+	syncManager     Synchronizer
 
 	pb.UnimplementedArtifactServiceServer
 }
@@ -39,7 +42,11 @@ type HealthServer struct {
 type PasswordServiceInterface interface {
 	ChangePassword(ctx context.Context, data *dto.ChangePassword) error
 }
-
+type Synchronizer interface {
+	Subscribe(userID string, clientID string) chan *pb.SyncEvent
+	Unsubscribe(userID string, clientID string)
+	GetEventsSince(userID string, since int64) []*pb.SyncEvent
+}
 type AuthServiceInterface interface {
 	Login(ctx context.Context, login, password string) (*services.JWTToken, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*services.JWTToken, error)
@@ -51,10 +58,8 @@ type AuthServiceInterface interface {
 type TokenKeeper interface {
 	ValidateTokenWithBlacklist(ctx context.Context, token string) error
 	GetAccessTokenFromContext(ctx context.Context) (string, error)
-	 GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error) 
+	GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error)
 }
-
-
 
 type ArtifactReader interface {
 	GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error)
@@ -73,13 +78,13 @@ type GRPCServer struct {
 	server *grpc.Server
 }
 
-func NewGRPCServer(authService AuthServiceInterface, artifactService ArtifactRW, tokenService TokenKeeper) *GRPCServer {
+func NewGRPCServer(authService AuthServiceInterface, artifactService ArtifactRW, tokenService TokenKeeper, syncManager Synchronizer) *GRPCServer {
 	authInterceptor := interceptors.AuthInterceptor(tokenService)
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor))
 
 	authServer := &AuthServer{authService: authService, tokenService: tokenService}
-	artifactServer := &ArtifactServer{artifactService: artifactService, tokenService: tokenService}
+	artifactServer := &ArtifactServer{artifactService: artifactService, tokenService: tokenService, syncManager: syncManager}
 	healthServer := health.NewServer()
 
 	pb.RegisterAuthServer(grpcServer, authServer)
@@ -120,7 +125,7 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 	logger.Info("AuthServer Login")
 	jwt, err := s.authService.Login(ctx, req.User.Login, req.User.Password)
 	if err != nil {
-		if err != nil {
+		
 			logger.Error("Ошибка при авторизации",
 				slog.String("error", err.Error()),
 				slog.String("login", req.User.Login),
@@ -139,7 +144,7 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 			}
 
 			return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
-		}
+		
 	}
 	return &pb.LoginUserResponse{
 		RefreshToken: jwt.RefreshToken,
@@ -199,9 +204,26 @@ func (s *AuthServer) SendEmailConfirmation(ctx context.Context, req *pb.SendEmai
 
 // Реализация методов ArtifactService
 func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtifactRequest) (*pb.CreateArtifactResponse, error) {
-	// TODO: Реализовать создание артефакта
-	slog.Info("AuthServer CreateArtifact")
 
+	slog.Info("AuthServer CreateArtifact")
+	user, err := getUserFomCtx(ctx, s.tokenService)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user")
+	}
+
+	err = s.artifactService.CreateArtifact(ctx, user.ID, &domain.Artifact{
+		Type: domain.ArtifactType{
+			Id: int(req.Type),
+		},
+		ExpiredAt: time.Unix(req.ExpiredAt, 0),
+		MetaInfo:  req.MetaInfo,
+		Link:      req.Link,
+	})
+	if err != nil {
+		logger.Error(fmt.Sprintf("ArtifactServer CreateArtifact Failed to create artifact: %v", err))
+		return nil, status.Error(codes.Internal, "failed to create artifact")
+	}
 	artifact := &pb.Artifact{}
 
 	return &pb.CreateArtifactResponse{
@@ -218,19 +240,13 @@ func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactReq
 
 func (s *ArtifactServer) ListArtifacts(ctx context.Context, req *pb.ListArtifactsRequest) (*pb.ListArtifactsResponse, error) {
 	logger.Info("AuthServer ListArtifacts")
-	token, err := s.tokenService.GetAccessTokenFromContext(ctx)
-	if err != nil {
-		logger.Error(fmt.Sprintf("AuthInterceptor failed to get user from token: %v", err))
-
-		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
-	}
-	user, err := s.tokenService.GetUserFromAcssToken(token)
+	user, err := getUserFomCtx(ctx, s.tokenService)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
-		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
+		return nil, status.Error(codes.Unauthenticated, "failed to get user")
 	}
-	artifacts,err:=  s.artifactService.GetArtifacts(ctx, user.ID, req.Page, req.OnPage)
-if err != nil {
+	artifacts, err := s.artifactService.GetArtifacts(ctx, user.ID, req.Page, req.OnPage)
+	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to get artifacts: %v", err))
 		return nil, status.Error(codes.Internal, "failed to get artifacts")
 	}
@@ -239,7 +255,7 @@ if err != nil {
 		pbArtifact := domain.DomainToPBArtifact(&artifact)
 		pbArtifacts = append(pbArtifacts, pbArtifact)
 	}
-	
+
 	return &pb.ListArtifactsResponse{
 		Artifacts: pbArtifacts,
 	}, nil
@@ -253,9 +269,17 @@ func (s *ArtifactServer) UpdateArtifact(ctx context.Context, req *pb.UpdateArtif
 }
 
 func (s *ArtifactServer) DeleteArtifact(ctx context.Context, req *pb.DeleteArtifactRequest) (*pb.DeleteArtifactResponse, error) {
-	// TODO: Реализовать удаление артефакта
 	slog.Info("AuthServer DeleteArtifact")
-
+	user, err := getUserFomCtx(ctx, s.tokenService)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user")
+	}
+	err = s.artifactService.DeleteArtifact(ctx, user.ID, req.ArtifactId)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get artifacts: %v", err))
+		return nil, status.Error(codes.Internal, "failed to delete artifact")
+	}
 	return &pb.DeleteArtifactResponse{}, nil
 }
 
@@ -267,19 +291,111 @@ func (s *ArtifactServer) GetWithOTP(ctx context.Context, req *pb.GetWithOTPReque
 }
 
 func (s *ArtifactServer) Sync(stream pb.ArtifactService_SyncServer) error {
-	// TODO: Реализовать синхронизацию в реальном времени
-	slog.Info("AuthServer Sync")
+	ctx := stream.Context()
 
-	for {
-		_, err := stream.Recv()
-		if err != nil {
-			return err
+	// Получаем пользователя из контекста
+	user, err := getUserFomCtx(ctx, s.tokenService)
+	if err != nil {
+		return status.Error(codes.Unauthenticated, "failed to get user")
+	}
+
+	// Ждем первый запрос от клиента
+	firstReq, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	clientID := firstReq.GetClientId()
+	lastSyncTime := firstReq.GetLastSyncTime()
+
+	logger.Info("Client connected to sync stream",
+		"userID", user.ID,
+		"clientID", clientID,
+		"lastSyncTime", lastSyncTime)
+
+	// Подписываемся на события
+	syncCh := s.syncManager.Subscribe(user.ID, clientID)
+	defer s.syncManager.Unsubscribe(user.ID, clientID)
+
+	// Отправляем историю событий (если нужно)
+	if lastSyncTime > 0 {
+		recentEvents := s.syncManager.GetEventsSince(user.ID, lastSyncTime)
+		for _, event := range recentEvents {
+			if err := stream.Send(event); err != nil {
+				return err
+			}
 		}
 
-		// Отправляем событие синхронизации
-		event := &pb.SyncEvent{}
-		if err := stream.Send(event); err != nil {
+		// Отправляем событие завершения начальной синхронизации
+		syncComplete := &pb.SyncEvent{
+			EventId:   eventidgen.GenerateEventID(),
+			Timestamp: time.Now().Unix(),
+			EventType: &pb.SyncEvent_SyncComplete{
+				SyncComplete: &pb.SyncCompleteEvent{
+					SyncTime:    time.Now().Unix(),
+					EventsCount: int32(len(recentEvents)),
+				},
+			},
+		}
+		if err := stream.Send(syncComplete); err != nil {
 			return err
 		}
 	}
+
+	// Канал для обработки входящих запросов от клиента
+	requestCh := make(chan *pb.SyncRequest, 10)
+
+	// Горутина для чтения запросов от клиента
+	go func() {
+		defer close(requestCh)
+		for {
+			req, err := stream.Recv()
+			if err != nil {
+				slog.Error("Error receiving from stream", "error", err)
+				return
+			}
+			requestCh <- req
+		}
+	}()
+
+	// Главный цикл обработки
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("Sync stream context done", "clientID", clientID)
+			return nil
+
+		case req, ok := <-requestCh:
+			if !ok {
+				return nil // Канал закрыт
+			}
+			// Обрабатываем запросы от клиента (heartbeat и т.д.)
+			slog.Debug("Received sync request", "clientID", req.ClientId, "lastSyncTime", req.LastSyncTime)
+
+		case event, ok := <-syncCh:
+			if !ok {
+				slog.Info("Sync channel closed", "clientID", clientID)
+				return nil
+			}
+			// Отправляем событие клиенту
+			if err := stream.Send(event); err != nil {
+				slog.Error("Error sending event to client", "error", err, "clientID", clientID)
+				return err
+			}
+		}
+	}
+}
+func getUserFomCtx(ctx context.Context, tokenService TokenKeeper) (*dto.UserRepoDTO, error) {
+	token, err := tokenService.GetAccessTokenFromContext(ctx)
+	if err != nil {
+		logger.Error(fmt.Sprintf("AuthInterceptor failed to get user from token: %v", err))
+
+		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
+	}
+	user, err := tokenService.GetUserFromAcssToken(token)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user from token")
+	}
+	return user, nil
 }

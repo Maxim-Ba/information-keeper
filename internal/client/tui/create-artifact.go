@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -44,40 +45,41 @@ func (m createArtifactModel) Update(msg tea.Msg) (createArtifactModel, tea.Cmd) 
 		switch msg.String() {
 		case "esc":
 			return m, func() tea.Msg { return navigateToMsg{state: mainMenuState} }
-		case "tab", "shift+tab", "enter", "up", "down":
+		case "tab", "shift+tab", "up", "down":
 			// Навигация по полям
 			s := msg.String()
 
-			if s == "enter" {
-				if m.submitting {
-					return m, nil
-				}
-				return m, m.submitArtifact()
+			if s == "up" || s == "shift+tab" {
+				m.focusIndex--
+			} else {
+				m.focusIndex++
 			}
 
-			if s == "tab" || s == "shift+tab" || s == "up" || s == "down" {
-				if s == "up" || s == "shift+tab" {
-					m.focusIndex--
+			if m.focusIndex > len(m.inputs)-1 {
+				m.focusIndex = 0
+			} else if m.focusIndex < 0 {
+				m.focusIndex = len(m.inputs) - 1
+			}
+
+			cmds := make([]tea.Cmd, len(m.inputs))
+			for i := 0; i < len(m.inputs); i++ {
+				if i == m.focusIndex {
+					cmds[i] = m.inputs[i].Focus()
 				} else {
-					m.focusIndex++
+					m.inputs[i].Blur()
 				}
-
-				if m.focusIndex > len(m.inputs)-1 {
-					m.focusIndex = 0
-				} else if m.focusIndex < 0 {
-					m.focusIndex = len(m.inputs) - 1
-				}
-
-				cmds := make([]tea.Cmd, len(m.inputs))
-				for i := 0; i < len(m.inputs); i++ {
-					if i == m.focusIndex {
-						cmds[i] = m.inputs[i].Focus()
-					} else {
-						m.inputs[i].Blur()
-					}
-				}
-				return m, tea.Batch(cmds...)
 			}
+			return m, tea.Batch(cmds...)
+		case "enter":
+			if m.submitting {
+				return m, nil
+			}
+			// Проверяем обязательное поле
+			if strings.TrimSpace(m.inputs[0].Value()) == "" {
+				return m, nil
+			}
+			m.submitting = true
+			return m, m.submitArtifact()
 		}
 	}
 
@@ -92,15 +94,12 @@ func (m createArtifactModel) Update(msg tea.Msg) (createArtifactModel, tea.Cmd) 
 
 func (m createArtifactModel) submitArtifact() tea.Cmd {
 	return func() tea.Msg {
-		m.submitting = true
-		defer func() { m.submitting = false }()
-
-		metaInfo := m.inputs[0].Value()
-		link := m.inputs[1].Value()
-		// expireHours := m.inputs[2].Value()
+		metaInfo := strings.TrimSpace(m.inputs[0].Value())
+		link := strings.TrimSpace(m.inputs[1].Value())
+		// expireHours := strings.TrimSpace(m.inputs[2].Value())
 
 		req := &proto.CreateArtifactRequest{
-			Type:     proto.ArtifactTypeEnum_TEXT, // По умолчанию TEXT
+			Type:     proto.ArtifactTypeEnum_TEXT,
 			MetaInfo: metaInfo,
 			Link:     link,
 		}
@@ -110,19 +109,36 @@ func (m createArtifactModel) submitArtifact() tea.Cmd {
 		ctx := context.Background()
 		resp, err := globalClient.CreateArtifact(ctx, req)
 		if err != nil {
-			return errorMsg(fmt.Errorf("Ошибка создания артефакта: %v", err))
+			logger.Error("Ошибка создания артефакта err:", err)
+			return artifactCreateResultMsg{
+				success: false,
+				error:   fmt.Errorf("ошибка создания артефакта: %v", err),
+			}
 		}
 		if resp.Error != "" {
-			return errorMsg(fmt.Errorf("Ошибка: %s", resp.Error))
+			logger.Error("Ошибка создания артефакта resp.Error:", resp.Error)
+
+			return artifactCreateResultMsg{
+				success: false,
+				error:   fmt.Errorf("ошибка: %s", resp.Error),
+			}
 		}
 
-		return successMsg("Артефакт успешно создан!")
+		return artifactCreateResultMsg{
+			success: true,
+			message: "Артефакт успешно создан!",
+		}
 	}
 }
 
 func (m createArtifactModel) View() string {
 	var b strings.Builder
 	b.WriteString("➕ Создание артефакта\n\n")
+
+	if m.submitting {
+		b.WriteString("⏳ Создание...\n\n")
+		return b.String()
+	}
 
 	fields := []string{
 		"Мета-информация:",
@@ -135,5 +151,17 @@ func (m createArtifactModel) View() string {
 
 	b.WriteString(strings.Join(fields, "\n"))
 	b.WriteString("\n\nEnter - создать • Esc - назад • Tab - переключение полей\n")
+
+	// Подсказка про обязательное поле
+	if strings.TrimSpace(m.inputs[0].Value()) == "" {
+		b.WriteString("\n⚠️  Мета-информация обязательна для заполнения")
+	}
+
 	return b.String()
+}
+
+type artifactCreateResultMsg struct {
+	success bool
+	message string
+	error   error
 }

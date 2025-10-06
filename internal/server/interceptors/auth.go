@@ -28,20 +28,6 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 
-		// md, ok := metadata.FromIncomingContext(ctx)
-		// if !ok {
-		// 	return nil, status.Error(codes.Unauthenticated, "metadata not provided")
-		// }
-		// tokens := md["authorization"]
-		// logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
-		// if len(tokens) == 0 {
-		// 	return nil, status.Error(codes.Unauthenticated, "authorization token not provided")
-		// }
-		// token := strings.TrimPrefix(tokens[0], "Bearer ")
-		// if err := tokenService.ValidateTokenWithBlacklist(ctx, token); err != nil {
-		// 	logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
-		// 	return nil, status.Error(codes.Unauthenticated, "invalid token")
-		// }
 		token, err := tokenService.GetAccessTokenFromContext(ctx)
 		if err != nil {
 			

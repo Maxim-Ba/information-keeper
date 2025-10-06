@@ -58,7 +58,7 @@ func main() {
 	syncManager := services.NewSyncManager(5, time.Duration(5)) // TODO : change to config
 
 	artifactService := services.NewArtifactService(artifactRepo, syncManager)
-	grpcServer := server.NewGRPCServer(authService, artifactService, tokenService)
+	grpcServer := server.NewGRPCServer(authService, artifactService, tokenService, syncManager)
 	go func() {
 		logger.Info("gRPC server running on " + cfg.GetConfig().ServerHost + ":" + cfg.GetConfig().ServerPort)
 

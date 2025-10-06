@@ -21,7 +21,7 @@ INSERT INTO artifact_types (name) VALUES
     ('link');
 
 CREATE TABLE artifacts (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type_id INTEGER NOT NULL REFERENCES artifact_types(id),
     meta_info TEXT,

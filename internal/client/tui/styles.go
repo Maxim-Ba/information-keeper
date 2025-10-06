@@ -9,12 +9,22 @@ var (
 			Padding(0, 1)
 
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")).
-			Bold(true)
+			Foreground(lipgloss.Color("#FF0000")).
+			Background(lipgloss.Color("#1A1A1A")).
+			Padding(1, 2).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#FF0000")).
+			Width(50).
+			Align(lipgloss.Center)
 
 	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("46")).
-			Bold(true)
+			Foreground(lipgloss.Color("#00FF00")).
+			Background(lipgloss.Color("#1A1A1A")).
+			Padding(1, 2).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#00FF00")).
+			Width(50).
+			Align(lipgloss.Center)
 
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240"))

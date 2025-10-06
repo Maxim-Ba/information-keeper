@@ -38,8 +38,8 @@ func main() {
 		panic(fmt.Sprintf("Не удалось подключиться к серверу: %v", err))
 	}
 
+	
 	if err := tui.StartTUIWithContext(ctx, clnt); err != nil {
 		panic(fmt.Sprintf("Ошибка запуска TUI: %v", err))
 	}
-
 }

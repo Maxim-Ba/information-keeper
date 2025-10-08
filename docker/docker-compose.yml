@@ -34,6 +34,7 @@ services:
       command: server /data --console-address ":9001"
       networks:
         - app-network
+    
   create-bucket:
     image: minio/mc
     depends_on:

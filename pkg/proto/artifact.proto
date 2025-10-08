@@ -8,12 +8,10 @@ option go_package = "github.com/Maxim-Ba/information-keeper/proto";
 // ----- Artifact Types -----
 
 enum ArtifactTypeEnum {
-  UNKNOWN = 0;
-  TEXT = 1;
-  IMAGE = 2;
-  DOCUMENT = 3;
-  CREDENTIAL = 4;
-  OTHER = 5;
+  TEXT = 0;
+  LOGIN_PASSWORD = 1;
+  BANK_CARD = 2;
+  BINARY = 3;
 }
 
 // ----- Artifact Messages -----
@@ -25,22 +23,18 @@ message Artifact {
   int64 updated_at = 4;  // Unix timestamp
   int64 expired_at = 5;  // Unix timestamp
   ArtifactTypeEnum type = 6;
-  string meta_info = 7;
-  string link = 8;
-}
-
-message ArtifactType {
-  int32 id = 1;
-  string name = 2;
+  string meta_info = 7;  // Название/описание для пользователя
+  string link = 8;       // Ссылка для скачивания
 }
 
 // ----- CRUD Operations -----
 
 message CreateArtifactRequest {
-  ArtifactTypeEnum type = 2;
-  string meta_info = 3;
-  string link = 4;
-  int64 expired_at = 5;  // Unix timestamp
+  ArtifactTypeEnum type = 1;
+  string meta_info = 2;
+  string link = 3;       // Опционально
+  int64 expired_at = 4;  // Unix timestamp
+  bytes payload = 5;     // Всегда бинарные данные
 }
 
 message CreateArtifactResponse {
@@ -54,13 +48,14 @@ message GetArtifactRequest {
 
 message GetArtifactResponse {
   Artifact artifact = 1;
-  string error = 2;
+  bytes payload = 2;     // Бинарные данные, которые нужно парсить по типу
+  string error = 3;
 }
 
 message ListArtifactsRequest {
   int32 page = 2;
   int32 on_page = 3;
-  ArtifactTypeEnum type_filter = 4;
+  optional ArtifactTypeEnum type_filter = 4;
 }
 
 message ListArtifactsResponse {
@@ -69,11 +64,12 @@ message ListArtifactsResponse {
 }
 
 message UpdateArtifactRequest {
-  string artifact_id = 2;
-  ArtifactTypeEnum type = 3;
-  string meta_info = 4;
-  string link = 5;
-  int64 expired_at = 6;  // Unix timestamp
+  string artifact_id = 1;
+  ArtifactTypeEnum type = 2;
+  string meta_info = 3;
+  string link = 4;
+  int64 expired_at = 5;  // Unix timestamp
+  bytes payload = 6;     // Всегда бинарные данные
 }
 
 message UpdateArtifactResponse {

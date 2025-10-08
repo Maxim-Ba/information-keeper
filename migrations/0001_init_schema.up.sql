@@ -15,10 +15,10 @@ CREATE TABLE artifact_types (
 );
 
 INSERT INTO artifact_types (name) VALUES
-    ('test'),
-    ('file'),
-    ('password'),
-    ('link');
+    ('text'),
+    ('loginpassword'),
+    ('bankcard'),
+    ('binary');
 
 CREATE TABLE artifacts (
     id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -38,3 +38,8 @@ CREATE INDEX idx_artifacts_expired_at ON artifacts(expired_at);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_login ON users(login);
 CREATE INDEX idx_artifacts_created_at ON artifacts(created_at);
+
+UPDATE artifact_types SET id = 0 WHERE name = 'text';
+UPDATE artifact_types SET id = 1 WHERE name = 'loginpassword'; 
+UPDATE artifact_types SET id = 2 WHERE name = 'bankcard';
+UPDATE artifact_types SET id = 3 WHERE name = 'binary';

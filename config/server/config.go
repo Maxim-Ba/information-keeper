@@ -13,7 +13,7 @@ type ServerCfg struct {
 	JWTSecret          string        `env:"JWT_SECRET" envDefault:"default-jwt-secret-change-in-production"`
 	AccessTokenExpiry  time.Duration `env:"ACCESS_TOKEN_EXPIRY" envDefault:"15m"`
 	RefreshTokenExpiry time.Duration `env:"REFRESH_TOKEN_EXPIRY" envDefault:"24h"`
-	S3endpoint         string        `env:"S3_ENDPOINT" envDefault:"localhost:9000"`
+	S3endpoint         string        `env:"S3_ENDPOINT" envDefault:"http://localhost:9000"`
 	S3accessKey        string        `env:"S3_ACCESS_KEY" envDefault:"minioadmin"`
 	S3secretKey        string        `env:"S3_SECRET_KEY" envDefault:"minioadmin"`
 	S3bucket           string        `env:"S3_BUCKET" envDefault:"your-bucket"`

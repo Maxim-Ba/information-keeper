@@ -10,7 +10,6 @@ import (
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -58,12 +57,10 @@ type artifactsModel struct {
 	height    int
 }
 
-// Модель создания артефакта
+// Модель создания артефакта (упрощенная, основная логика в create-artifact.go)
 type createArtifactModel struct {
-	inputs       []textinput.Model
-	focusIndex   int
-	artifactType int
-	submitting   bool
+	// Эта модель теперь делегирует всю логику внутренней структуре
+	screen createArtifactScreen
 }
 
 // Модель настроек
@@ -77,6 +74,8 @@ type artifactDetailModel struct {
 	artifact *proto.Artifact
 	choices  []string
 	cursor   int
+	width    int
+	height   int
 }
 
 func newArtifactDetailModel(artifact *proto.Artifact) artifactDetailModel {
@@ -88,8 +87,11 @@ func newArtifactDetailModel(artifact *proto.Artifact) artifactDetailModel {
 			"🗑️ Удалить",
 			"↩️ Назад к списку",
 		},
+		width:  80,
+		height: 20,
 	}
 }
+
 func (m artifactDetailModel) Init() tea.Cmd {
 	return nil
 }
@@ -133,31 +135,27 @@ func (m artifactDetailModel) handleSelection() tea.Cmd {
 
 func (m artifactDetailModel) View() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("📋 Артефакт: %s\n\n", m.artifact.MetaInfo))
+    b.WriteString(fmt.Sprintf("📋 Артефакт: %s\n\n", m.artifact.MetaInfo))
 
-	for i, choice := range m.choices {
-		cursor := " "
-		if m.cursor == i {
-			cursor = "▶"
-		}
-		b.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
-	}
+    for i, choice := range m.choices {
+        cursor := " "
+        if m.cursor == i {
+            cursor = "▶"
+        }
+        b.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
+    }
 
-	b.WriteString("\n↑/↓ - навигация • Enter - выбор • Esc - назад\n")
-	return b.String()
+    b.WriteString("\n↑/↓ - навигация • Enter - выбор • Esc - назад\n")
+    
+    content := b.String()
+    style := lipgloss.NewStyle().
+        Width(m.width - 4).  
+        MaxWidth(80).        
+        Height(m.height - 4). 
+        Align(lipgloss.Left)
+    
+    return style.Render(content)
 }
-
-// Элемент списка для артефактов
-type artifactItem struct {
-	artifact *proto.Artifact
-}
-
-func (i artifactItem) Title() string { return i.artifact.MetaInfo }
-func (i artifactItem) Description() string {
-	createdTime := time.Unix(i.artifact.CreatedAt, 0).Format("02.01.2006 15:04")
-	return fmt.Sprintf("Тип: %s • Создан: %s", i.artifact.Type.String(), createdTime)
-}
-func (i artifactItem) FilterValue() string { return i.artifact.MetaInfo }
 
 func InitialModel(grpcClient *client.GRPCClient) model {
 	return model{
@@ -172,17 +170,31 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	logger.Info("Обновление модели", "msg", msg)
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		// Передаем размеры дочерним компонентам
 		switch m.state {
 		case artifactsState:
-			m.artifacts.list.SetSize(msg.Width, msg.Height)
+			listHeight := msg.Height - 4
+			listWidth := msg.Width - 2   
+			logger.Info(fmt.Sprintf("Установка размера списка: %dx%d", listWidth, listHeight))
+			m.artifacts.list.SetSize(listWidth, listHeight)
+			m.artifacts.width = listWidth
+			m.artifacts.height = listHeight
+		case createArtifactState:
+			// Передаем размеры экрану создания артефакта
+			m.createArtifact, cmd = m.createArtifact.Update(msg)
+			// Если есть команда от создания артефакта, выполняем ее
+			if cmd != nil {
+				return m, cmd
+			}
+		case artifactDetailState:
+			// Явно передаем размеры в модель деталей
+			m.artifactDetail.width = msg.Width
+			m.artifactDetail.height = msg.Height
 		}
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
@@ -237,8 +249,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case deleteArtifactMsg:
 		// Удаление артефакта
 		return m, m.deleteArtifact(msg.artifact)
-		
-	//  ДЛЯ ОБРАБОТКИ РЕЗУЛЬТАТА СОЗДАНИЯ
+
+	// ДЛЯ ОБРАБОТКИ РЕЗУЛЬТАТА СОЗДАНИЯ
 	case artifactCreateResultMsg:
 		logger.Info("Обработка результата создания артефакта", "success", msg.success)
 		if msg.success {
@@ -253,7 +265,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Устанавливаем ошибку и сбрасываем флаг submitting
 			m.err = msg.error
 			if m.state == createArtifactState {
-				m.createArtifact.submitting = false
+				m.createArtifact.screen.submitting = false
 			}
 			// Автоматически очищаем ошибку через 5 секунд
 			return m, tea.Tick(5*time.Second, func(time.Time) tea.Msg {
@@ -288,9 +300,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	logger.Info("Рендер модели", "state", m.state)
-	
-	// Показываем ошибку или успешное сообщение поверх всего
+
 	if m.err != nil {
 		return errorStyle.Render(fmt.Sprintf("Ошибка: %v", m.err))
 	}
@@ -321,6 +331,7 @@ func (m model) View() string {
 		view,
 	)
 }
+
 func (m model) deleteArtifact(artifact *proto.Artifact) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
@@ -332,21 +343,21 @@ func (m model) deleteArtifact(artifact *proto.Artifact) tea.Cmd {
 		return successMsg("Артефакт успешно удален!")
 	}
 }
+
 func (m model) logout() tea.Msg {
 	logger.Info("Выполнение Logout")
 
 	ctx := context.Background()
 
-		resp, err := m.client.Logout(ctx)
-		if err != nil {
-			logger.Error("Ошибка при logout", "error", err.Error())
-			return errorMsg(fmt.Errorf("ошибка при выходе: %v", err))
-		}
-		if resp != nil && resp.Error != "" {
-			logger.Error("Ошибка от сервера при logout", "error", resp.Error)
-			return errorMsg(fmt.Errorf("ошибка сервера: %s", resp.Error))
-		}
-	
+	resp, err := m.client.Logout(ctx)
+	if err != nil {
+		logger.Error("Ошибка при logout", "error", err.Error())
+		return errorMsg(fmt.Errorf("ошибка при выходе: %v", err))
+	}
+	if resp != nil && resp.Error != "" {
+		logger.Error("Ошибка от сервера при logout", "error", resp.Error)
+		return errorMsg(fmt.Errorf("ошибка сервера: %s", resp.Error))
+	}
 
 	// Очищаем токены в любом случае
 	m.client.TokenManager.SetTokens("", "")
@@ -383,4 +394,10 @@ type editArtifactMsg struct {
 
 type deleteArtifactMsg struct {
 	artifact *proto.Artifact
+}
+
+type artifactCreateResultMsg struct {
+	success bool
+	message string
+	error   error
 }

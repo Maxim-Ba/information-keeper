@@ -5,14 +5,15 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/internal/server/s3client"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
+	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
 type ArtifactRepository struct {
@@ -80,13 +81,8 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
-	//TODO обработка типа
-	// Если это файл, загружаем в S3
-	if artifact.Type.Id == 3 { // Предположим, что тип 3 = файл
-		if err := r.uploadFileToS3(ctx, artifact); err != nil {
-			return nil, err
-		}
-	}
+
+	// 1. СНАЧАЛА сохраняем в БД чтобы получить ID
 	query := `
         INSERT INTO artifacts (owner_id, created_at, updated_at, expired_at, type_id, meta_info, link)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -98,12 +94,12 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 
 	err = tx.QueryRowContext(ctx, query,
 		artifact.OwnerID,
-		time.Now(),
-		time.Now(),
+		artifact.CreatedAt,
+		artifact.UpdatedAt,
 		artifact.ExpiredAt,
 		artifact.Type.Id,
 		artifact.MetaInfo,
-		artifact.Link,
+		"", // Пока оставляем link пустым, заполним после загрузки в S3
 	).Scan(
 		&createdArtifact.ID,
 		&createdArtifact.OwnerID,
@@ -129,6 +125,20 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 
 	createdArtifact.Type = artifactType
 
+	// 2. ТЕПЕРЬ загружаем данные в S3, если есть payload
+	if len(artifact.Payload) > 0 {
+		if err := r.uploadPayloadToS3(ctx, &createdArtifact, artifact.Payload); err != nil {
+			return nil, err
+		}
+
+		// 3. Обновляем ссылку в БД
+		updateQuery := `UPDATE artifacts SET link = $1 WHERE id = $2`
+		_, err = tx.ExecContext(ctx, updateQuery, createdArtifact.Link, createdArtifact.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update artifact link: %w", err)
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -142,6 +152,27 @@ func (r *ArtifactRepository) UpdateArtifact(ctx context.Context, artifact *domai
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
+
+	// Сначала получаем текущий артефакт чтобы знать старую ссылку
+	currentArtifact, err := r.GetArtifactByID(ctx, artifact.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// ВСЕГДА обновляем данные в S3, если есть новый payload
+	if len(artifact.Payload) > 0 {
+		// Сначала удаляем старый файл если есть ссылка
+		if currentArtifact.Link != "" {
+			if err := r.deleteFileFromS3(ctx, currentArtifact.Link); err != nil {
+				return nil, err
+			}
+		}
+		// Загружаем новый файл
+		if err := r.uploadPayloadToS3(ctx, artifact,artifact.Payload); err != nil {
+			return nil, err
+		}
+	}
+
 
 	query := `
         UPDATE artifacts 
@@ -207,13 +238,11 @@ func (r *ArtifactRepository) DeleteArtifact(ctx context.Context, id string) (*do
 		return nil, err
 	}
 
-	// Если это файл, удаляем из S3
-	if artifact.Type.Id == 3 { // Тип 3 = файл
+if artifact.Link != "" {
 		if err := r.deleteFileFromS3(ctx, artifact.Link); err != nil {
 			return nil, err
 		}
 	}
-
 	query := `DELETE FROM artifacts WHERE id = $1 RETURNING id`
 	var deletedID string
 	err = tx.QueryRowContext(ctx, query, id).Scan(&deletedID)
@@ -267,35 +296,43 @@ func (r *ArtifactRepository) GetArtifactByID(ctx context.Context, id string) (*d
 }
 
 // Вспомогательные методы для работы с S3
-func (r *ArtifactRepository) uploadFileToS3(ctx context.Context, artifact *domain.Artifact) error {
-	// Парсим метаинформацию для получения данных файла
-	var fileMeta struct {
-		FileName    string `json:"file_name"`
-		Content     []byte `json:"content"`
-		ContentType string `json:"content_type"`
+func (r *ArtifactRepository) uploadPayloadToS3(ctx context.Context, artifact *domain.Artifact, payload []byte) error {
+	// Теперь используем существующий ID артефакта для формирования ключа
+	s3Key := fmt.Sprintf("users/%s/artifacts/%s/payload",
+		artifact.OwnerID, artifact.ID)
+
+	// Определяем ContentType в зависимости от типа данных
+	contentType := "application/octet-stream"
+	switch artifact.Type.Id {
+	case int(proto.ArtifactTypeEnum_TEXT):
+		contentType = "application/json"
+	case int(proto.ArtifactTypeEnum_LOGIN_PASSWORD):
+		contentType = "application/json"
+	case int(proto.ArtifactTypeEnum_BANK_CARD):
+		contentType = "application/json"
+	case int(proto.ArtifactTypeEnum_BINARY):
+		contentType = "application/octet-stream"
 	}
 
-	if err := json.Unmarshal([]byte(artifact.MetaInfo), &fileMeta); err != nil {
-		return fmt.Errorf("failed to parse file metadata: %w", err)
-	}
-
-	// Генерируем уникальный ключ для S3
-	s3Key := fmt.Sprintf("users/%s/artifacts/%s/%s",
-		artifact.OwnerID, artifact.ID, fileMeta.FileName)
-
-	// Загружаем файл в S3
+	// Загружаем данные в S3
 	_, err := r.s3client.Upload(ctx, s3client.UploadInput{
 		Key:         s3Key,
-		Body:        bytes.NewReader(fileMeta.Content),
-		ContentType: fileMeta.ContentType,
-		ContentSize: int64(len(fileMeta.Content)),
+		Body:        bytes.NewReader(payload),
+		ContentType: contentType,
+		ContentSize: int64(len(payload)),
+		Metadata: map[string]string{
+			"artifact-type":    fmt.Sprintf("%d", artifact.Type.Id),
+			"artifact-id":      artifact.ID,
+			"owner-id":        artifact.OwnerID,
+			"created-at":      artifact.CreatedAt.Format(time.RFC3339),
+		},
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to upload file to S3: %w", err)
+		return fmt.Errorf("failed to upload payload to S3: %w", err)
 	}
 
-	// Обновляем ссылку на файл в S3
+	// Обновляем ссылку на файл в S3 в объекте артефакта
 	artifact.Link = s3Key
 	return nil
 }
@@ -315,7 +352,8 @@ func (r *ArtifactRepository) GetPresignedURL(ctx context.Context, artifactID str
 		return "", err
 	}
 
-	if artifact.Type.Id != 3 { // Только для файлов
+	// ВСЕГДА генерируем presigned URL если есть ссылка
+	if artifact.Link == "" {
 		return "", ErrInvalidInput
 	}
 
@@ -330,4 +368,30 @@ func (r *ArtifactRepository) GetPresignedURL(ctx context.Context, artifactID str
 	}
 
 	return url, nil
+}
+
+func (r *ArtifactRepository) DownloadPayload(ctx context.Context, artifactID string) ([]byte, error) {
+	artifact, err := r.GetArtifactByID(ctx, artifactID)
+	if err != nil {
+		return nil, err
+	}
+
+	if artifact.Link == "" {
+		return nil, ErrNotFound
+	}
+
+	result, err := r.s3client.Download(ctx, s3client.DownloadInput{
+		Key: artifact.Link,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download payload from S3: %w", err)
+	}
+	defer result.Body.Close()
+
+	payload, err := io.ReadAll(result.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read payload: %w", err)
+	}
+
+	return payload, nil
 }

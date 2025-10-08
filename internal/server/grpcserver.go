@@ -14,6 +14,7 @@ import (
 	"github.com/Maxim-Ba/information-keeper/internal/server/services"
 	eventidgen "github.com/Maxim-Ba/information-keeper/pkg/event-id-gen"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
+	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 	pb "github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -66,7 +67,7 @@ type ArtifactReader interface {
 	GetArtifactByID(ctx context.Context, userID string, id string) (*domain.Artifact, error)
 }
 type ArtifactWriter interface {
-	CreateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error
+CreateArtifact(ctx context.Context, userID string, req *proto.CreateArtifactRequest) error
 	UpdateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error
 	DeleteArtifact(ctx context.Context, userID string, id string) error
 }
@@ -212,14 +213,7 @@ func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtif
 		return nil, status.Error(codes.Unauthenticated, "failed to get user")
 	}
 
-	err = s.artifactService.CreateArtifact(ctx, user.ID, &domain.Artifact{
-		Type: domain.ArtifactType{
-			Id: int(req.Type),
-		},
-		ExpiredAt: time.Unix(req.ExpiredAt, 0),
-		MetaInfo:  req.MetaInfo,
-		Link:      req.Link,
-	})
+	err = s.artifactService.CreateArtifact(ctx, user.ID, req)
 	if err != nil {
 		logger.Error(fmt.Sprintf("ArtifactServer CreateArtifact Failed to create artifact: %v", err))
 		return nil, status.Error(codes.Internal, "failed to create artifact")

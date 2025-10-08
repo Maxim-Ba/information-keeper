@@ -189,19 +189,27 @@ func (c *GRPCClient) GetArtifact(ctx context.Context, artifactID string) (*proto
 	return resp, nil
 }
 
-func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, typeFilter proto.ArtifactTypeEnum) (*proto.ListArtifactsResponse, error) {
+func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, typeFilter *proto.ArtifactTypeEnum) (*proto.ListArtifactsResponse, error) {
 	var resp *proto.ListArtifactsResponse
 	var err error
 
 	operation := func(ctx context.Context) error {
-		ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
-		resp, err = c.artifactClient.ListArtifacts(ctxWithToken, &proto.ListArtifactsRequest{
-			Page:       page,
-			OnPage:     onPage,
-			TypeFilter: typeFilter,
-		})
-		return err
-	}
+        ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+        
+        // Создаем запрос с опциональным typeFilter
+        req := &proto.ListArtifactsRequest{
+            Page:   page,
+            OnPage: onPage,
+        }
+        
+        // Добавляем typeFilter только если он указан
+        if typeFilter != nil {
+            req.TypeFilter = typeFilter
+        }
+        
+        resp, err = c.artifactClient.ListArtifacts(ctxWithToken, req)
+        return err
+    }
 
 	if err := c.executeWithTokenRetry(ctx, operation); err != nil {
 		return nil, err

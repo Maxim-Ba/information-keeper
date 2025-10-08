@@ -24,31 +24,25 @@ const (
 type ArtifactTypeEnum int32
 
 const (
-	ArtifactTypeEnum_UNKNOWN    ArtifactTypeEnum = 0
-	ArtifactTypeEnum_TEXT       ArtifactTypeEnum = 1
-	ArtifactTypeEnum_IMAGE      ArtifactTypeEnum = 2
-	ArtifactTypeEnum_DOCUMENT   ArtifactTypeEnum = 3
-	ArtifactTypeEnum_CREDENTIAL ArtifactTypeEnum = 4
-	ArtifactTypeEnum_OTHER      ArtifactTypeEnum = 5
+	ArtifactTypeEnum_TEXT           ArtifactTypeEnum = 0
+	ArtifactTypeEnum_LOGIN_PASSWORD ArtifactTypeEnum = 1
+	ArtifactTypeEnum_BANK_CARD      ArtifactTypeEnum = 2
+	ArtifactTypeEnum_BINARY         ArtifactTypeEnum = 3
 )
 
 // Enum value maps for ArtifactTypeEnum.
 var (
 	ArtifactTypeEnum_name = map[int32]string{
-		0: "UNKNOWN",
-		1: "TEXT",
-		2: "IMAGE",
-		3: "DOCUMENT",
-		4: "CREDENTIAL",
-		5: "OTHER",
+		0: "TEXT",
+		1: "LOGIN_PASSWORD",
+		2: "BANK_CARD",
+		3: "BINARY",
 	}
 	ArtifactTypeEnum_value = map[string]int32{
-		"UNKNOWN":    0,
-		"TEXT":       1,
-		"IMAGE":      2,
-		"DOCUMENT":   3,
-		"CREDENTIAL": 4,
-		"OTHER":      5,
+		"TEXT":           0,
+		"LOGIN_PASSWORD": 1,
+		"BANK_CARD":      2,
+		"BINARY":         3,
 	}
 )
 
@@ -87,8 +81,8 @@ type Artifact struct {
 	UpdatedAt     int64                  `protobuf:"varint,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // Unix timestamp
 	ExpiredAt     int64                  `protobuf:"varint,5,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"` // Unix timestamp
 	Type          ArtifactTypeEnum       `protobuf:"varint,6,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
-	MetaInfo      string                 `protobuf:"bytes,7,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
-	Link          string                 `protobuf:"bytes,8,opt,name=link,proto3" json:"link,omitempty"`
+	MetaInfo      string                 `protobuf:"bytes,7,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"` // Название/описание для пользователя
+	Link          string                 `protobuf:"bytes,8,opt,name=link,proto3" json:"link,omitempty"`                         // Ссылка для скачивания
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -162,7 +156,7 @@ func (x *Artifact) GetType() ArtifactTypeEnum {
 	if x != nil {
 		return x.Type
 	}
-	return ArtifactTypeEnum_UNKNOWN
+	return ArtifactTypeEnum_TEXT
 }
 
 func (x *Artifact) GetMetaInfo() string {
@@ -179,71 +173,20 @@ func (x *Artifact) GetLink() string {
 	return ""
 }
 
-type ArtifactType struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ArtifactType) Reset() {
-	*x = ArtifactType{}
-	mi := &file_artifact_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ArtifactType) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ArtifactType) ProtoMessage() {}
-
-func (x *ArtifactType) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ArtifactType.ProtoReflect.Descriptor instead.
-func (*ArtifactType) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ArtifactType) GetId() int32 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *ArtifactType) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
 type CreateArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ArtifactTypeEnum       `protobuf:"varint,2,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
-	MetaInfo      string                 `protobuf:"bytes,3,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
-	Link          string                 `protobuf:"bytes,4,opt,name=link,proto3" json:"link,omitempty"`
-	ExpiredAt     int64                  `protobuf:"varint,5,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"` // Unix timestamp
+	Type          ArtifactTypeEnum       `protobuf:"varint,1,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
+	MetaInfo      string                 `protobuf:"bytes,2,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
+	Link          string                 `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`                             // Опционально
+	ExpiredAt     int64                  `protobuf:"varint,4,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"` // Unix timestamp
+	Payload       []byte                 `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`                       // Всегда бинарные данные
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateArtifactRequest) Reset() {
 	*x = CreateArtifactRequest{}
-	mi := &file_artifact_proto_msgTypes[2]
+	mi := &file_artifact_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +198,7 @@ func (x *CreateArtifactRequest) String() string {
 func (*CreateArtifactRequest) ProtoMessage() {}
 
 func (x *CreateArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[2]
+	mi := &file_artifact_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,14 +211,14 @@ func (x *CreateArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateArtifactRequest.ProtoReflect.Descriptor instead.
 func (*CreateArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{2}
+	return file_artifact_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreateArtifactRequest) GetType() ArtifactTypeEnum {
 	if x != nil {
 		return x.Type
 	}
-	return ArtifactTypeEnum_UNKNOWN
+	return ArtifactTypeEnum_TEXT
 }
 
 func (x *CreateArtifactRequest) GetMetaInfo() string {
@@ -299,6 +242,13 @@ func (x *CreateArtifactRequest) GetExpiredAt() int64 {
 	return 0
 }
 
+func (x *CreateArtifactRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
 type CreateArtifactResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Artifact      *Artifact              `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
@@ -309,7 +259,7 @@ type CreateArtifactResponse struct {
 
 func (x *CreateArtifactResponse) Reset() {
 	*x = CreateArtifactResponse{}
-	mi := &file_artifact_proto_msgTypes[3]
+	mi := &file_artifact_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -321,7 +271,7 @@ func (x *CreateArtifactResponse) String() string {
 func (*CreateArtifactResponse) ProtoMessage() {}
 
 func (x *CreateArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[3]
+	mi := &file_artifact_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -334,7 +284,7 @@ func (x *CreateArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateArtifactResponse.ProtoReflect.Descriptor instead.
 func (*CreateArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{3}
+	return file_artifact_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateArtifactResponse) GetArtifact() *Artifact {
@@ -360,7 +310,7 @@ type GetArtifactRequest struct {
 
 func (x *GetArtifactRequest) Reset() {
 	*x = GetArtifactRequest{}
-	mi := &file_artifact_proto_msgTypes[4]
+	mi := &file_artifact_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +322,7 @@ func (x *GetArtifactRequest) String() string {
 func (*GetArtifactRequest) ProtoMessage() {}
 
 func (x *GetArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[4]
+	mi := &file_artifact_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +335,7 @@ func (x *GetArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetArtifactRequest.ProtoReflect.Descriptor instead.
 func (*GetArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{4}
+	return file_artifact_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetArtifactRequest) GetArtifactId() string {
@@ -398,14 +348,15 @@ func (x *GetArtifactRequest) GetArtifactId() string {
 type GetArtifactResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Artifact      *Artifact              `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	Payload       []byte                 `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"` // Бинарные данные, которые нужно парсить по типу
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetArtifactResponse) Reset() {
 	*x = GetArtifactResponse{}
-	mi := &file_artifact_proto_msgTypes[5]
+	mi := &file_artifact_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -417,7 +368,7 @@ func (x *GetArtifactResponse) String() string {
 func (*GetArtifactResponse) ProtoMessage() {}
 
 func (x *GetArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[5]
+	mi := &file_artifact_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,12 +381,19 @@ func (x *GetArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetArtifactResponse.ProtoReflect.Descriptor instead.
 func (*GetArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{5}
+	return file_artifact_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetArtifactResponse) GetArtifact() *Artifact {
 	if x != nil {
 		return x.Artifact
+	}
+	return nil
+}
+
+func (x *GetArtifactResponse) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
 	}
 	return nil
 }
@@ -451,14 +409,14 @@ type ListArtifactsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
 	OnPage        int32                  `protobuf:"varint,3,opt,name=on_page,json=onPage,proto3" json:"on_page,omitempty"`
-	TypeFilter    ArtifactTypeEnum       `protobuf:"varint,4,opt,name=type_filter,json=typeFilter,proto3,enum=artifact.ArtifactTypeEnum" json:"type_filter,omitempty"`
+	TypeFilter    *ArtifactTypeEnum      `protobuf:"varint,4,opt,name=type_filter,json=typeFilter,proto3,enum=artifact.ArtifactTypeEnum,oneof" json:"type_filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListArtifactsRequest) Reset() {
 	*x = ListArtifactsRequest{}
-	mi := &file_artifact_proto_msgTypes[6]
+	mi := &file_artifact_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -470,7 +428,7 @@ func (x *ListArtifactsRequest) String() string {
 func (*ListArtifactsRequest) ProtoMessage() {}
 
 func (x *ListArtifactsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[6]
+	mi := &file_artifact_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -483,7 +441,7 @@ func (x *ListArtifactsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListArtifactsRequest.ProtoReflect.Descriptor instead.
 func (*ListArtifactsRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{6}
+	return file_artifact_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListArtifactsRequest) GetPage() int32 {
@@ -501,10 +459,10 @@ func (x *ListArtifactsRequest) GetOnPage() int32 {
 }
 
 func (x *ListArtifactsRequest) GetTypeFilter() ArtifactTypeEnum {
-	if x != nil {
-		return x.TypeFilter
+	if x != nil && x.TypeFilter != nil {
+		return *x.TypeFilter
 	}
-	return ArtifactTypeEnum_UNKNOWN
+	return ArtifactTypeEnum_TEXT
 }
 
 type ListArtifactsResponse struct {
@@ -517,7 +475,7 @@ type ListArtifactsResponse struct {
 
 func (x *ListArtifactsResponse) Reset() {
 	*x = ListArtifactsResponse{}
-	mi := &file_artifact_proto_msgTypes[7]
+	mi := &file_artifact_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +487,7 @@ func (x *ListArtifactsResponse) String() string {
 func (*ListArtifactsResponse) ProtoMessage() {}
 
 func (x *ListArtifactsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[7]
+	mi := &file_artifact_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +500,7 @@ func (x *ListArtifactsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListArtifactsResponse.ProtoReflect.Descriptor instead.
 func (*ListArtifactsResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{7}
+	return file_artifact_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListArtifactsResponse) GetArtifacts() []*Artifact {
@@ -561,18 +519,19 @@ func (x *ListArtifactsResponse) GetError() string {
 
 type UpdateArtifactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
-	Type          ArtifactTypeEnum       `protobuf:"varint,3,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
-	MetaInfo      string                 `protobuf:"bytes,4,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
-	Link          string                 `protobuf:"bytes,5,opt,name=link,proto3" json:"link,omitempty"`
-	ExpiredAt     int64                  `protobuf:"varint,6,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"` // Unix timestamp
+	ArtifactId    string                 `protobuf:"bytes,1,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	Type          ArtifactTypeEnum       `protobuf:"varint,2,opt,name=type,proto3,enum=artifact.ArtifactTypeEnum" json:"type,omitempty"`
+	MetaInfo      string                 `protobuf:"bytes,3,opt,name=meta_info,json=metaInfo,proto3" json:"meta_info,omitempty"`
+	Link          string                 `protobuf:"bytes,4,opt,name=link,proto3" json:"link,omitempty"`
+	ExpiredAt     int64                  `protobuf:"varint,5,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"` // Unix timestamp
+	Payload       []byte                 `protobuf:"bytes,6,opt,name=payload,proto3" json:"payload,omitempty"`                       // Всегда бинарные данные
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateArtifactRequest) Reset() {
 	*x = UpdateArtifactRequest{}
-	mi := &file_artifact_proto_msgTypes[8]
+	mi := &file_artifact_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +543,7 @@ func (x *UpdateArtifactRequest) String() string {
 func (*UpdateArtifactRequest) ProtoMessage() {}
 
 func (x *UpdateArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[8]
+	mi := &file_artifact_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +556,7 @@ func (x *UpdateArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateArtifactRequest.ProtoReflect.Descriptor instead.
 func (*UpdateArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{8}
+	return file_artifact_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateArtifactRequest) GetArtifactId() string {
@@ -611,7 +570,7 @@ func (x *UpdateArtifactRequest) GetType() ArtifactTypeEnum {
 	if x != nil {
 		return x.Type
 	}
-	return ArtifactTypeEnum_UNKNOWN
+	return ArtifactTypeEnum_TEXT
 }
 
 func (x *UpdateArtifactRequest) GetMetaInfo() string {
@@ -635,6 +594,13 @@ func (x *UpdateArtifactRequest) GetExpiredAt() int64 {
 	return 0
 }
 
+func (x *UpdateArtifactRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
 type UpdateArtifactResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Artifact      *Artifact              `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
@@ -645,7 +611,7 @@ type UpdateArtifactResponse struct {
 
 func (x *UpdateArtifactResponse) Reset() {
 	*x = UpdateArtifactResponse{}
-	mi := &file_artifact_proto_msgTypes[9]
+	mi := &file_artifact_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +623,7 @@ func (x *UpdateArtifactResponse) String() string {
 func (*UpdateArtifactResponse) ProtoMessage() {}
 
 func (x *UpdateArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[9]
+	mi := &file_artifact_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +636,7 @@ func (x *UpdateArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateArtifactResponse.ProtoReflect.Descriptor instead.
 func (*UpdateArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{9}
+	return file_artifact_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateArtifactResponse) GetArtifact() *Artifact {
@@ -696,7 +662,7 @@ type DeleteArtifactRequest struct {
 
 func (x *DeleteArtifactRequest) Reset() {
 	*x = DeleteArtifactRequest{}
-	mi := &file_artifact_proto_msgTypes[10]
+	mi := &file_artifact_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -708,7 +674,7 @@ func (x *DeleteArtifactRequest) String() string {
 func (*DeleteArtifactRequest) ProtoMessage() {}
 
 func (x *DeleteArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[10]
+	mi := &file_artifact_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -721,7 +687,7 @@ func (x *DeleteArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteArtifactRequest.ProtoReflect.Descriptor instead.
 func (*DeleteArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{10}
+	return file_artifact_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteArtifactRequest) GetArtifactId() string {
@@ -740,7 +706,7 @@ type DeleteArtifactResponse struct {
 
 func (x *DeleteArtifactResponse) Reset() {
 	*x = DeleteArtifactResponse{}
-	mi := &file_artifact_proto_msgTypes[11]
+	mi := &file_artifact_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -752,7 +718,7 @@ func (x *DeleteArtifactResponse) String() string {
 func (*DeleteArtifactResponse) ProtoMessage() {}
 
 func (x *DeleteArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[11]
+	mi := &file_artifact_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -765,7 +731,7 @@ func (x *DeleteArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteArtifactResponse.ProtoReflect.Descriptor instead.
 func (*DeleteArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{11}
+	return file_artifact_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteArtifactResponse) GetError() string {
@@ -784,7 +750,7 @@ type GetWithOTPRequest struct {
 
 func (x *GetWithOTPRequest) Reset() {
 	*x = GetWithOTPRequest{}
-	mi := &file_artifact_proto_msgTypes[12]
+	mi := &file_artifact_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -796,7 +762,7 @@ func (x *GetWithOTPRequest) String() string {
 func (*GetWithOTPRequest) ProtoMessage() {}
 
 func (x *GetWithOTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[12]
+	mi := &file_artifact_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -809,7 +775,7 @@ func (x *GetWithOTPRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWithOTPRequest.ProtoReflect.Descriptor instead.
 func (*GetWithOTPRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{12}
+	return file_artifact_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetWithOTPRequest) GetArtifactId() string {
@@ -829,7 +795,7 @@ type GetWithOTPResponse struct {
 
 func (x *GetWithOTPResponse) Reset() {
 	*x = GetWithOTPResponse{}
-	mi := &file_artifact_proto_msgTypes[13]
+	mi := &file_artifact_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -841,7 +807,7 @@ func (x *GetWithOTPResponse) String() string {
 func (*GetWithOTPResponse) ProtoMessage() {}
 
 func (x *GetWithOTPResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[13]
+	mi := &file_artifact_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -854,7 +820,7 @@ func (x *GetWithOTPResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWithOTPResponse.ProtoReflect.Descriptor instead.
 func (*GetWithOTPResponse) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{13}
+	return file_artifact_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetWithOTPResponse) GetArtifact() *Artifact {
@@ -881,7 +847,7 @@ type SyncRequest struct {
 
 func (x *SyncRequest) Reset() {
 	*x = SyncRequest{}
-	mi := &file_artifact_proto_msgTypes[14]
+	mi := &file_artifact_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -893,7 +859,7 @@ func (x *SyncRequest) String() string {
 func (*SyncRequest) ProtoMessage() {}
 
 func (x *SyncRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[14]
+	mi := &file_artifact_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -906,7 +872,7 @@ func (x *SyncRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
 func (*SyncRequest) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{14}
+	return file_artifact_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SyncRequest) GetClientId() string {
@@ -942,7 +908,7 @@ type SyncEvent struct {
 
 func (x *SyncEvent) Reset() {
 	*x = SyncEvent{}
-	mi := &file_artifact_proto_msgTypes[15]
+	mi := &file_artifact_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -954,7 +920,7 @@ func (x *SyncEvent) String() string {
 func (*SyncEvent) ProtoMessage() {}
 
 func (x *SyncEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[15]
+	mi := &file_artifact_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -967,7 +933,7 @@ func (x *SyncEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncEvent.ProtoReflect.Descriptor instead.
 func (*SyncEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{15}
+	return file_artifact_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SyncEvent) GetEventId() string {
@@ -1094,7 +1060,7 @@ type ArtifactCreatedEvent struct {
 
 func (x *ArtifactCreatedEvent) Reset() {
 	*x = ArtifactCreatedEvent{}
-	mi := &file_artifact_proto_msgTypes[16]
+	mi := &file_artifact_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1106,7 +1072,7 @@ func (x *ArtifactCreatedEvent) String() string {
 func (*ArtifactCreatedEvent) ProtoMessage() {}
 
 func (x *ArtifactCreatedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[16]
+	mi := &file_artifact_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1119,7 +1085,7 @@ func (x *ArtifactCreatedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactCreatedEvent.ProtoReflect.Descriptor instead.
 func (*ArtifactCreatedEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{16}
+	return file_artifact_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ArtifactCreatedEvent) GetArtifact() *Artifact {
@@ -1138,7 +1104,7 @@ type ArtifactUpdatedEvent struct {
 
 func (x *ArtifactUpdatedEvent) Reset() {
 	*x = ArtifactUpdatedEvent{}
-	mi := &file_artifact_proto_msgTypes[17]
+	mi := &file_artifact_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1150,7 +1116,7 @@ func (x *ArtifactUpdatedEvent) String() string {
 func (*ArtifactUpdatedEvent) ProtoMessage() {}
 
 func (x *ArtifactUpdatedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[17]
+	mi := &file_artifact_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1163,7 +1129,7 @@ func (x *ArtifactUpdatedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactUpdatedEvent.ProtoReflect.Descriptor instead.
 func (*ArtifactUpdatedEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{17}
+	return file_artifact_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ArtifactUpdatedEvent) GetArtifact() *Artifact {
@@ -1182,7 +1148,7 @@ type ArtifactDeletedEvent struct {
 
 func (x *ArtifactDeletedEvent) Reset() {
 	*x = ArtifactDeletedEvent{}
-	mi := &file_artifact_proto_msgTypes[18]
+	mi := &file_artifact_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1194,7 +1160,7 @@ func (x *ArtifactDeletedEvent) String() string {
 func (*ArtifactDeletedEvent) ProtoMessage() {}
 
 func (x *ArtifactDeletedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[18]
+	mi := &file_artifact_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1207,7 +1173,7 @@ func (x *ArtifactDeletedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactDeletedEvent.ProtoReflect.Descriptor instead.
 func (*ArtifactDeletedEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{18}
+	return file_artifact_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ArtifactDeletedEvent) GetArtifactId() string {
@@ -1227,7 +1193,7 @@ type SyncCompleteEvent struct {
 
 func (x *SyncCompleteEvent) Reset() {
 	*x = SyncCompleteEvent{}
-	mi := &file_artifact_proto_msgTypes[19]
+	mi := &file_artifact_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1239,7 +1205,7 @@ func (x *SyncCompleteEvent) String() string {
 func (*SyncCompleteEvent) ProtoMessage() {}
 
 func (x *SyncCompleteEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[19]
+	mi := &file_artifact_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1252,7 +1218,7 @@ func (x *SyncCompleteEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncCompleteEvent.ProtoReflect.Descriptor instead.
 func (*SyncCompleteEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{19}
+	return file_artifact_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SyncCompleteEvent) GetSyncTime() int64 {
@@ -1280,7 +1246,7 @@ type ClientHello struct {
 
 func (x *ClientHello) Reset() {
 	*x = ClientHello{}
-	mi := &file_artifact_proto_msgTypes[20]
+	mi := &file_artifact_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1292,7 +1258,7 @@ func (x *ClientHello) String() string {
 func (*ClientHello) ProtoMessage() {}
 
 func (x *ClientHello) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[20]
+	mi := &file_artifact_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1305,7 +1271,7 @@ func (x *ClientHello) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientHello.ProtoReflect.Descriptor instead.
 func (*ClientHello) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{20}
+	return file_artifact_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ClientHello) GetClientId() string {
@@ -1340,7 +1306,7 @@ type ClientAck struct {
 
 func (x *ClientAck) Reset() {
 	*x = ClientAck{}
-	mi := &file_artifact_proto_msgTypes[21]
+	mi := &file_artifact_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1352,7 +1318,7 @@ func (x *ClientAck) String() string {
 func (*ClientAck) ProtoMessage() {}
 
 func (x *ClientAck) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[21]
+	mi := &file_artifact_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1365,7 +1331,7 @@ func (x *ClientAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientAck.ProtoReflect.Descriptor instead.
 func (*ClientAck) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{21}
+	return file_artifact_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ClientAck) GetEventId() string {
@@ -1400,7 +1366,7 @@ type ClientConnectedEvent struct {
 
 func (x *ClientConnectedEvent) Reset() {
 	*x = ClientConnectedEvent{}
-	mi := &file_artifact_proto_msgTypes[22]
+	mi := &file_artifact_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1412,7 +1378,7 @@ func (x *ClientConnectedEvent) String() string {
 func (*ClientConnectedEvent) ProtoMessage() {}
 
 func (x *ClientConnectedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[22]
+	mi := &file_artifact_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1425,7 +1391,7 @@ func (x *ClientConnectedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientConnectedEvent.ProtoReflect.Descriptor instead.
 func (*ClientConnectedEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{22}
+	return file_artifact_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ClientConnectedEvent) GetClientId() string {
@@ -1459,7 +1425,7 @@ type ClientDisconnectedEvent struct {
 
 func (x *ClientDisconnectedEvent) Reset() {
 	*x = ClientDisconnectedEvent{}
-	mi := &file_artifact_proto_msgTypes[23]
+	mi := &file_artifact_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1471,7 +1437,7 @@ func (x *ClientDisconnectedEvent) String() string {
 func (*ClientDisconnectedEvent) ProtoMessage() {}
 
 func (x *ClientDisconnectedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_artifact_proto_msgTypes[23]
+	mi := &file_artifact_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1484,7 +1450,7 @@ func (x *ClientDisconnectedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientDisconnectedEvent.ProtoReflect.Descriptor instead.
 func (*ClientDisconnectedEvent) Descriptor() ([]byte, []int) {
-	return file_artifact_proto_rawDescGZIP(), []int{23}
+	return file_artifact_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ClientDisconnectedEvent) GetClientId() string {
@@ -1517,41 +1483,42 @@ const file_artifact_proto_rawDesc = "" +
 	"expired_at\x18\x05 \x01(\x03R\texpiredAt\x12.\n" +
 	"\x04type\x18\x06 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
 	"\tmeta_info\x18\a \x01(\tR\bmetaInfo\x12\x12\n" +
-	"\x04link\x18\b \x01(\tR\x04link\"2\n" +
-	"\fArtifactType\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\x97\x01\n" +
+	"\x04link\x18\b \x01(\tR\x04link\"\xb1\x01\n" +
 	"\x15CreateArtifactRequest\x12.\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
-	"\tmeta_info\x18\x03 \x01(\tR\bmetaInfo\x12\x12\n" +
-	"\x04link\x18\x04 \x01(\tR\x04link\x12\x1d\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
+	"\tmeta_info\x18\x02 \x01(\tR\bmetaInfo\x12\x12\n" +
+	"\x04link\x18\x03 \x01(\tR\x04link\x12\x1d\n" +
 	"\n" +
-	"expired_at\x18\x05 \x01(\x03R\texpiredAt\"^\n" +
+	"expired_at\x18\x04 \x01(\x03R\texpiredAt\x12\x18\n" +
+	"\apayload\x18\x05 \x01(\fR\apayload\"^\n" +
 	"\x16CreateArtifactResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"5\n" +
 	"\x12GetArtifactRequest\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
-	"artifactId\"[\n" +
+	"artifactId\"u\n" +
 	"\x13GetArtifactResponse\x12.\n" +
-	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\x80\x01\n" +
+	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x18\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\x95\x01\n" +
 	"\x14ListArtifactsRequest\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x17\n" +
-	"\aon_page\x18\x03 \x01(\x05R\x06onPage\x12;\n" +
-	"\vtype_filter\x18\x04 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\n" +
-	"typeFilter\"_\n" +
+	"\aon_page\x18\x03 \x01(\x05R\x06onPage\x12@\n" +
+	"\vtype_filter\x18\x04 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumH\x00R\n" +
+	"typeFilter\x88\x01\x01B\x0e\n" +
+	"\f_type_filter\"_\n" +
 	"\x15ListArtifactsResponse\x120\n" +
 	"\tartifacts\x18\x01 \x03(\v2\x12.artifact.ArtifactR\tartifacts\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\xb8\x01\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xd2\x01\n" +
 	"\x15UpdateArtifactRequest\x12\x1f\n" +
-	"\vartifact_id\x18\x02 \x01(\tR\n" +
+	"\vartifact_id\x18\x01 \x01(\tR\n" +
 	"artifactId\x12.\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
-	"\tmeta_info\x18\x04 \x01(\tR\bmetaInfo\x12\x12\n" +
-	"\x04link\x18\x05 \x01(\tR\x04link\x12\x1d\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x1a.artifact.ArtifactTypeEnumR\x04type\x12\x1b\n" +
+	"\tmeta_info\x18\x03 \x01(\tR\bmetaInfo\x12\x12\n" +
+	"\x04link\x18\x04 \x01(\tR\x04link\x12\x1d\n" +
 	"\n" +
-	"expired_at\x18\x06 \x01(\x03R\texpiredAt\"^\n" +
+	"expired_at\x18\x05 \x01(\x03R\texpiredAt\x12\x18\n" +
+	"\apayload\x18\x06 \x01(\fR\apayload\"^\n" +
 	"\x16UpdateArtifactResponse\x12.\n" +
 	"\bartifact\x18\x01 \x01(\v2\x12.artifact.ArtifactR\bartifact\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"8\n" +
@@ -1606,15 +1573,13 @@ const file_artifact_proto_rawDesc = "" +
 	"\fconnect_time\x18\x03 \x01(\x03R\vconnectTime\"_\n" +
 	"\x17ClientDisconnectedEvent\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12'\n" +
-	"\x0fdisconnect_time\x18\x02 \x01(\x03R\x0edisconnectTime*]\n" +
-	"\x10ArtifactTypeEnum\x12\v\n" +
-	"\aUNKNOWN\x10\x00\x12\b\n" +
-	"\x04TEXT\x10\x01\x12\t\n" +
-	"\x05IMAGE\x10\x02\x12\f\n" +
-	"\bDOCUMENT\x10\x03\x12\x0e\n" +
+	"\x0fdisconnect_time\x18\x02 \x01(\x03R\x0edisconnectTime*K\n" +
+	"\x10ArtifactTypeEnum\x12\b\n" +
+	"\x04TEXT\x10\x00\x12\x12\n" +
+	"\x0eLOGIN_PASSWORD\x10\x01\x12\r\n" +
+	"\tBANK_CARD\x10\x02\x12\n" +
 	"\n" +
-	"CREDENTIAL\x10\x04\x12\t\n" +
-	"\x05OTHER\x10\x052\xaf\x04\n" +
+	"\x06BINARY\x10\x032\xaf\x04\n" +
 	"\x0fArtifactService\x12S\n" +
 	"\x0eCreateArtifact\x12\x1f.artifact.CreateArtifactRequest\x1a .artifact.CreateArtifactResponse\x12J\n" +
 	"\vGetArtifact\x12\x1c.artifact.GetArtifactRequest\x1a\x1d.artifact.GetArtifactResponse\x12P\n" +
@@ -1638,33 +1603,32 @@ func file_artifact_proto_rawDescGZIP() []byte {
 }
 
 var file_artifact_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_artifact_proto_goTypes = []any{
 	(ArtifactTypeEnum)(0),           // 0: artifact.ArtifactTypeEnum
 	(*Artifact)(nil),                // 1: artifact.Artifact
-	(*ArtifactType)(nil),            // 2: artifact.ArtifactType
-	(*CreateArtifactRequest)(nil),   // 3: artifact.CreateArtifactRequest
-	(*CreateArtifactResponse)(nil),  // 4: artifact.CreateArtifactResponse
-	(*GetArtifactRequest)(nil),      // 5: artifact.GetArtifactRequest
-	(*GetArtifactResponse)(nil),     // 6: artifact.GetArtifactResponse
-	(*ListArtifactsRequest)(nil),    // 7: artifact.ListArtifactsRequest
-	(*ListArtifactsResponse)(nil),   // 8: artifact.ListArtifactsResponse
-	(*UpdateArtifactRequest)(nil),   // 9: artifact.UpdateArtifactRequest
-	(*UpdateArtifactResponse)(nil),  // 10: artifact.UpdateArtifactResponse
-	(*DeleteArtifactRequest)(nil),   // 11: artifact.DeleteArtifactRequest
-	(*DeleteArtifactResponse)(nil),  // 12: artifact.DeleteArtifactResponse
-	(*GetWithOTPRequest)(nil),       // 13: artifact.GetWithOTPRequest
-	(*GetWithOTPResponse)(nil),      // 14: artifact.GetWithOTPResponse
-	(*SyncRequest)(nil),             // 15: artifact.SyncRequest
-	(*SyncEvent)(nil),               // 16: artifact.SyncEvent
-	(*ArtifactCreatedEvent)(nil),    // 17: artifact.ArtifactCreatedEvent
-	(*ArtifactUpdatedEvent)(nil),    // 18: artifact.ArtifactUpdatedEvent
-	(*ArtifactDeletedEvent)(nil),    // 19: artifact.ArtifactDeletedEvent
-	(*SyncCompleteEvent)(nil),       // 20: artifact.SyncCompleteEvent
-	(*ClientHello)(nil),             // 21: artifact.ClientHello
-	(*ClientAck)(nil),               // 22: artifact.ClientAck
-	(*ClientConnectedEvent)(nil),    // 23: artifact.ClientConnectedEvent
-	(*ClientDisconnectedEvent)(nil), // 24: artifact.ClientDisconnectedEvent
+	(*CreateArtifactRequest)(nil),   // 2: artifact.CreateArtifactRequest
+	(*CreateArtifactResponse)(nil),  // 3: artifact.CreateArtifactResponse
+	(*GetArtifactRequest)(nil),      // 4: artifact.GetArtifactRequest
+	(*GetArtifactResponse)(nil),     // 5: artifact.GetArtifactResponse
+	(*ListArtifactsRequest)(nil),    // 6: artifact.ListArtifactsRequest
+	(*ListArtifactsResponse)(nil),   // 7: artifact.ListArtifactsResponse
+	(*UpdateArtifactRequest)(nil),   // 8: artifact.UpdateArtifactRequest
+	(*UpdateArtifactResponse)(nil),  // 9: artifact.UpdateArtifactResponse
+	(*DeleteArtifactRequest)(nil),   // 10: artifact.DeleteArtifactRequest
+	(*DeleteArtifactResponse)(nil),  // 11: artifact.DeleteArtifactResponse
+	(*GetWithOTPRequest)(nil),       // 12: artifact.GetWithOTPRequest
+	(*GetWithOTPResponse)(nil),      // 13: artifact.GetWithOTPResponse
+	(*SyncRequest)(nil),             // 14: artifact.SyncRequest
+	(*SyncEvent)(nil),               // 15: artifact.SyncEvent
+	(*ArtifactCreatedEvent)(nil),    // 16: artifact.ArtifactCreatedEvent
+	(*ArtifactUpdatedEvent)(nil),    // 17: artifact.ArtifactUpdatedEvent
+	(*ArtifactDeletedEvent)(nil),    // 18: artifact.ArtifactDeletedEvent
+	(*SyncCompleteEvent)(nil),       // 19: artifact.SyncCompleteEvent
+	(*ClientHello)(nil),             // 20: artifact.ClientHello
+	(*ClientAck)(nil),               // 21: artifact.ClientAck
+	(*ClientConnectedEvent)(nil),    // 22: artifact.ClientConnectedEvent
+	(*ClientDisconnectedEvent)(nil), // 23: artifact.ClientDisconnectedEvent
 }
 var file_artifact_proto_depIdxs = []int32{
 	0,  // 0: artifact.Artifact.type:type_name -> artifact.ArtifactTypeEnum
@@ -1676,28 +1640,28 @@ var file_artifact_proto_depIdxs = []int32{
 	0,  // 6: artifact.UpdateArtifactRequest.type:type_name -> artifact.ArtifactTypeEnum
 	1,  // 7: artifact.UpdateArtifactResponse.artifact:type_name -> artifact.Artifact
 	1,  // 8: artifact.GetWithOTPResponse.artifact:type_name -> artifact.Artifact
-	17, // 9: artifact.SyncEvent.artifact_created:type_name -> artifact.ArtifactCreatedEvent
-	18, // 10: artifact.SyncEvent.artifact_updated:type_name -> artifact.ArtifactUpdatedEvent
-	19, // 11: artifact.SyncEvent.artifact_deleted:type_name -> artifact.ArtifactDeletedEvent
-	20, // 12: artifact.SyncEvent.sync_complete:type_name -> artifact.SyncCompleteEvent
-	23, // 13: artifact.SyncEvent.client_connected:type_name -> artifact.ClientConnectedEvent
-	24, // 14: artifact.SyncEvent.client_disconnected:type_name -> artifact.ClientDisconnectedEvent
+	16, // 9: artifact.SyncEvent.artifact_created:type_name -> artifact.ArtifactCreatedEvent
+	17, // 10: artifact.SyncEvent.artifact_updated:type_name -> artifact.ArtifactUpdatedEvent
+	18, // 11: artifact.SyncEvent.artifact_deleted:type_name -> artifact.ArtifactDeletedEvent
+	19, // 12: artifact.SyncEvent.sync_complete:type_name -> artifact.SyncCompleteEvent
+	22, // 13: artifact.SyncEvent.client_connected:type_name -> artifact.ClientConnectedEvent
+	23, // 14: artifact.SyncEvent.client_disconnected:type_name -> artifact.ClientDisconnectedEvent
 	1,  // 15: artifact.ArtifactCreatedEvent.artifact:type_name -> artifact.Artifact
 	1,  // 16: artifact.ArtifactUpdatedEvent.artifact:type_name -> artifact.Artifact
-	3,  // 17: artifact.ArtifactService.CreateArtifact:input_type -> artifact.CreateArtifactRequest
-	5,  // 18: artifact.ArtifactService.GetArtifact:input_type -> artifact.GetArtifactRequest
-	7,  // 19: artifact.ArtifactService.ListArtifacts:input_type -> artifact.ListArtifactsRequest
-	9,  // 20: artifact.ArtifactService.UpdateArtifact:input_type -> artifact.UpdateArtifactRequest
-	11, // 21: artifact.ArtifactService.DeleteArtifact:input_type -> artifact.DeleteArtifactRequest
-	13, // 22: artifact.ArtifactService.GetWithOTP:input_type -> artifact.GetWithOTPRequest
-	15, // 23: artifact.ArtifactService.Sync:input_type -> artifact.SyncRequest
-	4,  // 24: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
-	6,  // 25: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
-	8,  // 26: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
-	10, // 27: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
-	12, // 28: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
-	14, // 29: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
-	16, // 30: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
+	2,  // 17: artifact.ArtifactService.CreateArtifact:input_type -> artifact.CreateArtifactRequest
+	4,  // 18: artifact.ArtifactService.GetArtifact:input_type -> artifact.GetArtifactRequest
+	6,  // 19: artifact.ArtifactService.ListArtifacts:input_type -> artifact.ListArtifactsRequest
+	8,  // 20: artifact.ArtifactService.UpdateArtifact:input_type -> artifact.UpdateArtifactRequest
+	10, // 21: artifact.ArtifactService.DeleteArtifact:input_type -> artifact.DeleteArtifactRequest
+	12, // 22: artifact.ArtifactService.GetWithOTP:input_type -> artifact.GetWithOTPRequest
+	14, // 23: artifact.ArtifactService.Sync:input_type -> artifact.SyncRequest
+	3,  // 24: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
+	5,  // 25: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
+	7,  // 26: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
+	9,  // 27: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
+	11, // 28: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
+	13, // 29: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
+	15, // 30: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
 	24, // [24:31] is the sub-list for method output_type
 	17, // [17:24] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
@@ -1710,7 +1674,8 @@ func file_artifact_proto_init() {
 	if File_artifact_proto != nil {
 		return
 	}
-	file_artifact_proto_msgTypes[15].OneofWrappers = []any{
+	file_artifact_proto_msgTypes[5].OneofWrappers = []any{}
+	file_artifact_proto_msgTypes[14].OneofWrappers = []any{
 		(*SyncEvent_ArtifactCreated)(nil),
 		(*SyncEvent_ArtifactUpdated)(nil),
 		(*SyncEvent_ArtifactDeleted)(nil),
@@ -1724,7 +1689,7 @@ func file_artifact_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_artifact_proto_rawDesc), len(file_artifact_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   24,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

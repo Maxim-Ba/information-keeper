@@ -116,24 +116,24 @@ func (s *ArtifactService) UpdateArtifact(ctx context.Context, userID string, art
 	if !s.isUsersArtifacts(userID, existingArtifact) {
 		return ErrForbiddenAction
 	}
- if len(artifact.Payload) > 0 {
-        artifactData, err := domain.ParseArtifactData(proto.ArtifactTypeEnum(existingArtifact.Type.Id), artifact.Payload)
-        if err != nil {
-            return fmt.Errorf("failed to parse artifact data: %w", err)
-        }
+	if len(artifact.Payload) > 0 {
+		artifactData, err := domain.ParseArtifactData(proto.ArtifactTypeEnum(existingArtifact.Type.Id), artifact.Payload)
+		if err != nil {
+			return fmt.Errorf("failed to parse artifact data: %w", err)
+		}
 
-        if err := artifactData.Validate(); err != nil {
-            return fmt.Errorf("artifact data validation failed: %w", err)
-        }
-    }
+		if err := artifactData.Validate(); err != nil {
+			return fmt.Errorf("artifact data validation failed: %w", err)
+		}
+	}
 	// Обновляем только разрешенные поля
 	existingArtifact.UpdatedAt = time.Now()
 	existingArtifact.ExpiredAt = artifact.ExpiredAt
 	existingArtifact.MetaInfo = artifact.MetaInfo
 	existingArtifact.Link = artifact.Link
-if len(artifact.Payload) > 0 {
-        existingArtifact.Payload = artifact.Payload
-    }
+	if len(artifact.Payload) > 0 {
+		existingArtifact.Payload = artifact.Payload
+	}
 	a, err := s.artifactRepository.UpdateArtifact(ctx, existingArtifact)
 	if err != nil {
 		return fmt.Errorf("ArtifactService UpdateArtifact: %w", err)
@@ -168,7 +168,7 @@ func (s *ArtifactService) DeleteArtifact(ctx context.Context, userID string, id 
 	}
 
 	s.syncManager.Broadcast(userID, &proto.SyncEvent{
-		EventId:    eventidgen.GenerateEventID(),
+		EventId:   eventidgen.GenerateEventID(),
 		Timestamp: time.Now().Unix(),
 		EventType: &proto.SyncEvent_ArtifactDeleted{
 			ArtifactDeleted: &proto.ArtifactDeletedEvent{
@@ -255,19 +255,19 @@ func (s *ArtifactService) processBinaryArtifact(ctx context.Context, artifact *d
 	return nil
 }
 func (s *ArtifactService) GetDownloadURL(ctx context.Context, userID string, artifactID string) (string, error) {
-    artifact, err := s.artifactRepository.GetArtifactByID(ctx, artifactID)
-    if err != nil {
-        return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
-    }
+	artifact, err := s.artifactRepository.GetArtifactByID(ctx, artifactID)
+	if err != nil {
+		return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
+	}
 
-    if !s.isUsersArtifacts(userID, artifact) {
-        return "", ErrForbiddenAction
-    }
+	if !s.isUsersArtifacts(userID, artifact) {
+		return "", ErrForbiddenAction
+	}
 
-    url, err := s.artifactRepository.GetDownloadURL(ctx, artifactID)
-    if err != nil {
-        return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
-    }
+	url, err := s.artifactRepository.GetDownloadURL(ctx, artifactID)
+	if err != nil {
+		return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
+	}
 
-    return url, nil
+	return url, nil
 }

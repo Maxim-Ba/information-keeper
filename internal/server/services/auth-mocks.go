@@ -66,12 +66,12 @@ type MockTokenService struct {
 }
 
 // Remove implements TokenServiceInterface.
-func (m *MockTokenService) Remove(ctx context.Context,token *JWTToken) error {
+func (m *MockTokenService) Remove(ctx context.Context, token *JWTToken) error {
 	args := m.Called(token)
 	return args.Error(0)
 }
 
-func (m *MockTokenService) RefreshToken(ctx context.Context,token string) (*JWTToken, error) {
+func (m *MockTokenService) RefreshToken(ctx context.Context, token string) (*JWTToken, error) {
 	args := m.Called(token)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

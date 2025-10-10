@@ -29,7 +29,7 @@ type UserRepository interface {
 type TokenServiceInterface interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*JWTToken, error)
 	GenerateToken(user *dto.UserRepoDTO) (*JWTToken, error)
-	Remove(ctx context.Context,token *JWTToken) error
+	Remove(ctx context.Context, token *JWTToken) error
 }
 
 type AuthService struct {
@@ -73,7 +73,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (*JWTTo
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*JWTToken, error) {
-	jwt, err := s.tokenService.RefreshToken(ctx,refreshToken)
+	jwt, err := s.tokenService.RefreshToken(ctx, refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("AuthService RefreshToken: %w", err)
 	}
@@ -81,7 +81,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*J
 }
 
 func (s *AuthService) Logout(ctx context.Context, token *JWTToken) error {
-	if err := s.tokenService.Remove(ctx,token); err != nil {
+	if err := s.tokenService.Remove(ctx, token); err != nil {
 		return fmt.Errorf("AuthService Logout: %w", err)
 	}
 	return nil

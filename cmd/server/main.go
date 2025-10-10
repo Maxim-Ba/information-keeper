@@ -26,7 +26,7 @@ func main() {
 	lgCfg := logger.DefaultConfig()
 	lgCfg.AddSource = false
 	if err := logger.InitLogger(lgCfg); err != nil {
-			panic(err)
+		panic(err)
 	}
 	defer logger.CloseLogger()
 	s3client, err := s3client.New(s3client.Config{

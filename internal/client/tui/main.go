@@ -19,13 +19,13 @@ func StartTUIWithContext(ctx context.Context, grpcClient *client.GRPCClient) err
 	}
 
 	p := tea.NewProgram(InitialModel(grpcClient), tea.WithAltScreen())
-	
+
 	go func() {
 		if _, err := p.Run(); err != nil {
 			slog.Error("Ошибка TUI", "error", err)
 		}
 	}()
-<-ctx.Done()
-p.Quit()
-return nil
+	<-ctx.Done()
+	p.Quit()
+	return nil
 }

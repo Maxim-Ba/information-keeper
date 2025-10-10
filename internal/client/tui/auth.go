@@ -210,8 +210,8 @@ func (m authModel) View() string {
 	// Добавляем отображение ошибки, если она есть и нужно показывать
 	errorSection := ""
 	if m.err != nil && m.showError {
-		errorSection = fmt.Sprintf("\n\n%s\n%s", 
-			errorStyle.Render("Ошибка:"), 
+		errorSection = fmt.Sprintf("\n\n%s\n%s",
+			errorStyle.Render("Ошибка:"),
 			errorStyle.Render(m.err.Error()+"\n[Esc] - Скрыть ошибку"),
 		)
 	}

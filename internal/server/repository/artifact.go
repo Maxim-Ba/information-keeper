@@ -168,11 +168,10 @@ func (r *ArtifactRepository) UpdateArtifact(ctx context.Context, artifact *domai
 			}
 		}
 		// Загружаем новый файл
-		if err := r.uploadPayloadToS3(ctx, artifact,artifact.Payload); err != nil {
+		if err := r.uploadPayloadToS3(ctx, artifact, artifact.Payload); err != nil {
 			return nil, err
 		}
 	}
-
 
 	query := `
         UPDATE artifacts 
@@ -238,7 +237,7 @@ func (r *ArtifactRepository) DeleteArtifact(ctx context.Context, id string) (*do
 		return nil, err
 	}
 
-if artifact.Link != "" {
+	if artifact.Link != "" {
 		if err := r.deleteFileFromS3(ctx, artifact.Link); err != nil {
 			return nil, err
 		}
@@ -321,10 +320,10 @@ func (r *ArtifactRepository) uploadPayloadToS3(ctx context.Context, artifact *do
 		ContentType: contentType,
 		ContentSize: int64(len(payload)),
 		Metadata: map[string]string{
-			"artifact-type":    fmt.Sprintf("%d", artifact.Type.Id),
-			"artifact-id":      artifact.ID,
-			"owner-id":        artifact.OwnerID,
-			"created-at":      artifact.CreatedAt.Format(time.RFC3339),
+			"artifact-type": fmt.Sprintf("%d", artifact.Type.Id),
+			"artifact-id":   artifact.ID,
+			"owner-id":      artifact.OwnerID,
+			"created-at":    artifact.CreatedAt.Format(time.RFC3339),
 		},
 	})
 
@@ -396,24 +395,24 @@ func (r *ArtifactRepository) DownloadPayload(ctx context.Context, artifactID str
 	return payload, nil
 }
 func (r *ArtifactRepository) GetDownloadURL(ctx context.Context, artifactID string) (string, error) {
-    artifact, err := r.GetArtifactByID(ctx, artifactID)
-    if err != nil {
-        return "", err
-    }
+	artifact, err := r.GetArtifactByID(ctx, artifactID)
+	if err != nil {
+		return "", err
+	}
 
-    if artifact.Link == "" {
-        return "", ErrNotFound
-    }
+	if artifact.Link == "" {
+		return "", ErrNotFound
+	}
 
-    url, err := r.s3client.GetPresignedURL(ctx, s3client.PresignedURLInput{
-        Key:     artifact.Link,
-        Method:  "GET",
-        Expires: 15 * time.Minute, 
-    })
+	url, err := r.s3client.GetPresignedURL(ctx, s3client.PresignedURLInput{
+		Key:     artifact.Link,
+		Method:  "GET",
+		Expires: 15 * time.Minute,
+	})
 
-    if err != nil {
-        return "", fmt.Errorf("failed to get presigned URL: %w", err)
-    }
+	if err != nil {
+		return "", fmt.Errorf("failed to get presigned URL: %w", err)
+	}
 
-    return url, nil
+	return url, nil
 }

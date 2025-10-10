@@ -37,33 +37,33 @@ func New(connStr, migrationsPath string) (*sql.DB, error) {
 }
 
 func applyMigrationsWithNewConnection(connStr, migrationsPath string) error {
-    migrationDB, err := sql.Open("pgx", connStr)
-    if err != nil {
-        return err
-    }
-    defer migrationDB.Close()
+	migrationDB, err := sql.Open("pgx", connStr)
+	if err != nil {
+		return err
+	}
+	defer migrationDB.Close()
 
-    if err := migrationDB.Ping(); err != nil {
-        return fmt.Errorf("failed to ping migration database: %w", err)
-    }
+	if err := migrationDB.Ping(); err != nil {
+		return fmt.Errorf("failed to ping migration database: %w", err)
+	}
 
-    driver, err := postgres.WithInstance(migrationDB, &postgres.Config{})
-    if err != nil {
-        return err
-    }
+	driver, err := postgres.WithInstance(migrationDB, &postgres.Config{})
+	if err != nil {
+		return err
+	}
 
-    m, err := migrate.NewWithDatabaseInstance(
-        migrationsPath,
-        "postgres", driver)
-    if err != nil {
-        return err
-    }
-    defer m.Close()
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationsPath,
+		"postgres", driver)
+	if err != nil {
+		return err
+	}
+	defer m.Close()
 
-    err = m.Up()
-    if err != nil && err != migrate.ErrNoChange {
-        return err
-    }
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
 
-    return nil
+	return nil
 }

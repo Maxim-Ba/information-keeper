@@ -34,7 +34,7 @@ func (m *MockDBWrapper) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.
 }
 
 func TestUserRepository_Login(t *testing.T) {
-	
+
 	type args struct {
 		login    string
 		password string
@@ -43,13 +43,13 @@ func TestUserRepository_Login(t *testing.T) {
 	type mockBehavior func(mock sqlmock.Sqlmock, args args)
 	type passwordManagerBehavior func(mockPM *mocks.MockPasswordManagerInterface, storedHash, password, secret string)
 	type testCase struct {
-		name                   string
-		args                   args
-		mockBehavior           mockBehavior
+		name                    string
+		args                    args
+		mockBehavior            mockBehavior
 		passwordManagerBehavior passwordManagerBehavior
-		wantUser               *dto.UserRepoDTO
-		wantErr                bool
-		expectErr              error
+		wantUser                *dto.UserRepoDTO
+		wantErr                 bool
+		expectErr               error
 	}
 
 	tests := []testCase{
@@ -144,20 +144,20 @@ func TestUserRepository_Login(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-			
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			
+
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 				PasswordSecret: "test-secret",
 			}).AnyTimes()
-			
+
 			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
 			if tt.passwordManagerBehavior != nil {
 				// Мы вызовем это позже, после настройки mock'ов
 			}
-			
+
 			mockDB := &MockDBWrapper{db: db}
 			repo := NewUserRepository(mockDB, mockAppConfig, mockPasswordManager)
 
@@ -198,12 +198,12 @@ func TestUserRepository_ChangePassword(t *testing.T) {
 	type mockBehavior func(mock sqlmock.Sqlmock, args args)
 	type passwordManagerBehavior func(mockPM *mocks.MockPasswordManagerInterface)
 	type testCase struct {
-		name                   string
-		args                   args
-		mockBehavior           mockBehavior
+		name                    string
+		args                    args
+		mockBehavior            mockBehavior
 		passwordManagerBehavior passwordManagerBehavior
-		wantErr                bool
-		expectErr              error
+		wantErr                 bool
+		expectErr               error
 	}
 
 	tests := []testCase{
@@ -351,15 +351,15 @@ func TestUserRepository_ChangePassword(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-			
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			
+
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 				PasswordSecret: "test-secret",
 			}).AnyTimes()
-			
+
 			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
 			if tt.passwordManagerBehavior != nil {
 				tt.passwordManagerBehavior(mockPasswordManager)
@@ -410,17 +410,17 @@ func TestUserRepository_GetUserByEmail(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-			
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			
+
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 				PasswordSecret: "test-secret",
 			}).AnyTimes()
-			
+
 			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
-			
+
 			mockDB := &MockDBWrapper{db: db}
 			repo := NewUserRepository(mockDB, mockAppConfig, mockPasswordManager)
 
@@ -549,14 +549,14 @@ func TestUserRepository_Register(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-ctrl := gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 				PasswordSecret: "test-secret",
 			}).AnyTimes()
 			mockDB := &MockDBWrapper{db: db}
-						mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
+			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
 
 			repo := NewUserRepository(mockDB, mockAppConfig, mockPasswordManager)
 
@@ -666,14 +666,14 @@ func TestUserRepository_Update(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-ctrl := gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 				PasswordSecret: "test-secret",
 			}).AnyTimes()
 			mockDB := &MockDBWrapper{db: db}
-									mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
+			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
 
 			repo := NewUserRepository(mockDB, mockAppConfig, mockPasswordManager)
 
@@ -769,7 +769,7 @@ func TestUserRepository_GetUserByID(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
-ctrl := gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockAppConfig := mocks.NewMockAppConfig(ctrl)
 			mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
@@ -777,7 +777,7 @@ ctrl := gomock.NewController(t)
 			}).AnyTimes()
 			mockDB := &MockDBWrapper{db: db}
 			mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
-			repo := NewUserRepository(mockDB, mockAppConfig,mockPasswordManager)
+			repo := NewUserRepository(mockDB, mockAppConfig, mockPasswordManager)
 
 			tt.mockBehavior(mock, tt.args)
 
@@ -802,18 +802,18 @@ ctrl := gomock.NewController(t)
 func TestNewUserRepository(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockAppConfig := mocks.NewMockAppConfig(ctrl)
 	mockAppConfig.EXPECT().GetConfig().Return(config.ServerCfg{
 		PasswordSecret: "test-secret",
 	}).AnyTimes()
-	
+
 	mockPasswordManager := mocks.NewMockPasswordManagerInterface(ctrl)
-	
+
 	type args struct {
-		db            DBInterface
-		cfg           AppConfig
-		pswdManager   PasswordManagerInterface
+		db          DBInterface
+		cfg         AppConfig
+		pswdManager PasswordManagerInterface
 	}
 
 	type testCase struct {
@@ -827,11 +827,11 @@ func TestNewUserRepository(t *testing.T) {
 		{
 			name: "Success",
 			args: args{
-				db: &MockDBWrapper{},
+				db:  &MockDBWrapper{},
 				cfg: mockAppConfig,
 			},
 			want: &UserRepository{
-				db: &MockDBWrapper{},
+				db:  &MockDBWrapper{},
 				cfg: mockAppConfig,
 			},
 			wantErr: false,
@@ -839,11 +839,11 @@ func TestNewUserRepository(t *testing.T) {
 		{
 			name: "Nil DB",
 			args: args{
-				db: nil,
+				db:  nil,
 				cfg: mockAppConfig,
 			},
 			want: &UserRepository{
-				db: nil,
+				db:  nil,
 				cfg: mockAppConfig,
 			},
 			wantErr: false,

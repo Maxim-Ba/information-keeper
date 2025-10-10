@@ -64,7 +64,7 @@ func (s *SyncManager) Subscribe(userID string, clientID string) chan *proto.Sync
 			},
 		},
 	}
-	
+
 	// Рассылаем всем клиентам пользователя (кроме нового)
 	for id, clientCh := range s.subscribers[userID] {
 		if id != clientID {
@@ -88,7 +88,7 @@ func (s *SyncManager) Unsubscribe(userID string, clientID string) {
 		if ch, exists := clients[clientID]; exists {
 			close(ch)
 			delete(clients, clientID)
-			
+
 			// Отправляем событие об отключении
 			disconnectEvent := &proto.SyncEvent{
 				EventId:   eventidgen.GenerateEventID(),
@@ -100,7 +100,7 @@ func (s *SyncManager) Unsubscribe(userID string, clientID string) {
 					},
 				},
 			}
-			
+
 			// Рассылаем остальным клиентам
 			for id, clientCh := range clients {
 				if id != clientID {
@@ -142,15 +142,15 @@ func (s *SyncManager) addToHistory(userID string, event *proto.SyncEvent) {
 	}
 
 	history := s.eventHistory[userID]
-	
+
 	// Добавляем событие
 	history = append(history, event)
-	
+
 	// Ограничиваем размер истории
 	if len(history) > s.historyLimit {
 		history = history[len(history)-s.historyLimit:]
 	}
-	
+
 	// Очищаем устаревшие события
 	var cleanedHistory []*proto.SyncEvent
 	for _, e := range history {
@@ -158,11 +158,9 @@ func (s *SyncManager) addToHistory(userID string, event *proto.SyncEvent) {
 			cleanedHistory = append(cleanedHistory, e)
 		}
 	}
-	
+
 	s.eventHistory[userID] = cleanedHistory
 }
-
-
 
 func NewSyncManager(historyLimit int, retentionPeriod time.Duration) *SyncManager {
 	return &SyncManager{

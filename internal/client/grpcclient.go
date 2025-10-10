@@ -531,84 +531,84 @@ func (c *GRPCClient) SyncLoop(ctx context.Context) {
 }
 
 func (c *GRPCClient) DownloadContent(downloadURL string) ([]byte, error) {
-    if downloadURL == "" {
-        return nil, fmt.Errorf("download URL is empty")
-    }
+	if downloadURL == "" {
+		return nil, fmt.Errorf("download URL is empty")
+	}
 
-    logger.Info("Downloading content from URL", "url", downloadURL)
+	logger.Info("Downloading content from URL", "url", downloadURL)
 
-    req, err := http.NewRequest("GET", downloadURL, nil)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create request: %v", err)
-    }
+	req, err := http.NewRequest("GET", downloadURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
 
-    client := &http.Client{
-        Timeout: 30 * time.Second,
-    }
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
-    resp, err := client.Do(req)
-    if err != nil {
-        return nil, fmt.Errorf("failed to download from URL: %v", err)
-    }
-    defer resp.Body.Close()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download from URL: %v", err)
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("download failed with status: %s", resp.Status)
-    }
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("download failed with status: %s", resp.Status)
+	}
 
-    content, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return nil, fmt.Errorf("failed to read response body: %v", err)
-    }
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
 
-    logger.Info("Content downloaded successfully", "size", len(content))
-    return content, nil
+	logger.Info("Content downloaded successfully", "size", len(content))
+	return content, nil
 }
 func (c *GRPCClient) GetArtifactWithContent(ctx context.Context, artifactID string) (*proto.GetArtifactResponse, error) {
-    var resp *proto.GetArtifactResponse
-    var err error
+	var resp *proto.GetArtifactResponse
+	var err error
 
-    operation := func(ctx context.Context) error {
-        ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
-        resp, err = c.artifactClient.GetArtifact(ctxWithToken, &proto.GetArtifactRequest{
-            ArtifactId: artifactID,
-        })
-        return err
-    }
+	operation := func(ctx context.Context) error {
+		ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+		resp, err = c.artifactClient.GetArtifact(ctxWithToken, &proto.GetArtifactRequest{
+			ArtifactId: artifactID,
+		})
+		return err
+	}
 
-    if err := c.executeWithTokenRetry(ctx, operation); err != nil {
-        return nil, err
-    }
+	if err := c.executeWithTokenRetry(ctx, operation); err != nil {
+		return nil, err
+	}
 
-    return resp, nil
+	return resp, nil
 }
 
 func (c *GRPCClient) DownloadArtifactContent(artifactID string) ([]byte, error) {
-        logger.Info("GRPCClient DownloadArtifactContent artifactID: " + artifactID)
+	logger.Info("GRPCClient DownloadArtifactContent artifactID: " + artifactID)
 
-    ctx := context.Background()
+	ctx := context.Background()
 
-    // Получаем артефакт чтобы получить ссылку
-    artifactResp, err := c.GetArtifact(ctx, artifactID)
-    if err != nil {
-        return nil, fmt.Errorf("failed to get artifact: %w", err)
-    }
+	// Получаем артефакт чтобы получить ссылку
+	artifactResp, err := c.GetArtifact(ctx, artifactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get artifact: %w", err)
+	}
 
-    // Для BINARY типа не скачиваем содержимое, только возвращаем пустой массив
-    if artifactResp.Artifact.Type == proto.ArtifactTypeEnum_BINARY {
-        return []byte{}, nil
-    }
+	// Для BINARY типа не скачиваем содержимое, только возвращаем пустой массив
+	if artifactResp.Artifact.Type == proto.ArtifactTypeEnum_BINARY {
+		return []byte{}, nil
+	}
 
-    if artifactResp.Artifact.Link == "" {
-        return nil, errors.New("artifact has no content link")
-    }
+	if artifactResp.Artifact.Link == "" {
+		return nil, errors.New("artifact has no content link")
+	}
 
-    content, err := c.DownloadContent(artifactResp.Artifact.Link)
-    if err != nil {
-        return nil, fmt.Errorf("failed to download content: %w", err)
-    }
+	content, err := c.DownloadContent(artifactResp.Artifact.Link)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download content: %w", err)
+	}
 
-    return content, nil
+	return content, nil
 
 }
 func (c *GRPCClient) GetArtifactDownloadURL(ctx context.Context, artifactID string) (string, error) {

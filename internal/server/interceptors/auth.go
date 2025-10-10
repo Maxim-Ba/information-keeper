@@ -30,7 +30,7 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 
 		token, err := tokenService.GetAccessTokenFromContext(ctx)
 		if err != nil {
-			
+
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 

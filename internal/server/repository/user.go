@@ -16,8 +16,8 @@ type AppConfig interface {
 	GetConfig() config.ServerCfg
 }
 type PasswordManagerInterface interface {
-	CheckPassword(hashedPassword, password , secret string ) error 
-	HashPassword(password ,secret string) (string, error)
+	CheckPassword(hashedPassword, password, secret string) error
+	HashPassword(password, secret string) (string, error)
 }
 type DBInterface interface {
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
@@ -25,8 +25,8 @@ type DBInterface interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 type UserRepository struct {
-	db  DBInterface
-	cfg AppConfig
+	db          DBInterface
+	cfg         AppConfig
 	pswdManager PasswordManagerInterface
 }
 
@@ -82,7 +82,7 @@ func (u *UserRepository) ChangePassword(ctx context.Context, login string, oldPa
 		return fmt.Errorf("failed to verify old password: %w", err)
 	}
 	if err := u.pswdManager.CheckPassword(storedPasswordHash, oldPassword, u.cfg.GetConfig().PasswordSecret); err != nil {
-		return  ErrInvalidCredentials
+		return ErrInvalidCredentials
 	}
 
 	updateQuery := `
@@ -230,8 +230,8 @@ func (u *UserRepository) GetUserByID(ctx context.Context, id string) (*dto.UserR
 
 func NewUserRepository(db DBInterface, cfg AppConfig, pswdManager PasswordManagerInterface) *UserRepository {
 	return &UserRepository{
-		db:  db,
-		cfg: cfg,
+		db:          db,
+		cfg:         cfg,
 		pswdManager: pswdManager,
 	}
 }

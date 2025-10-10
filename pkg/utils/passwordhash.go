@@ -8,8 +8,10 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
-type PasswordManager struct {}
-func (pm *PasswordManager)HashPassword(password ,secret string) (string, error) {
+
+type PasswordManager struct{}
+
+func (pm *PasswordManager) HashPassword(password, secret string) (string, error) {
 	if password == "" {
 		return "", fmt.Errorf("HashPassword: %w", ErrEmptyPassword)
 	}
@@ -27,7 +29,7 @@ func (pm *PasswordManager)HashPassword(password ,secret string) (string, error) 
 
 	return string(hashedBytes), nil
 }
-func (pm *PasswordManager)CheckPassword(hashedPassword, password , secret string ) error {
+func (pm *PasswordManager) CheckPassword(hashedPassword, password, secret string) error {
 
 	pepperedPassword := hmac.New(sha256.New, []byte(secret))
 	pepperedPassword.Write([]byte(password))

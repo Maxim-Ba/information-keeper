@@ -68,7 +68,7 @@ type ArtifactReader interface {
 	GetDownloadURL(ctx context.Context, userID string, artifactID string) (string, error)
 }
 type ArtifactWriter interface {
-CreateArtifact(ctx context.Context, userID string, req *proto.CreateArtifactRequest) error
+	CreateArtifact(ctx context.Context, userID string, req *proto.CreateArtifactRequest) error
 	UpdateArtifact(ctx context.Context, userID string, artifact *domain.Artifact) error
 	DeleteArtifact(ctx context.Context, userID string, id string) error
 }
@@ -127,26 +127,26 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 	logger.Info("AuthServer Login")
 	jwt, err := s.authService.Login(ctx, req.User.Login, req.User.Password)
 	if err != nil {
-		
-			logger.Error("Ошибка при авторизации",
-				slog.String("error", err.Error()),
-				slog.String("login", req.User.Login),
-			)
 
-			// Определяем appropriate gRPC код ошибки
-			var grpcCode codes.Code
-			switch {
-			case errors.Is(err, services.ErrInvalidCredentials):
-				grpcCode = codes.Unauthenticated
-			case errors.Is(err, services.ErrUserNotFound):
-				grpcCode = codes.NotFound
+		logger.Error("Ошибка при авторизации",
+			slog.String("error", err.Error()),
+			slog.String("login", req.User.Login),
+		)
 
-			default:
-				grpcCode = codes.Internal
-			}
+		// Определяем appropriate gRPC код ошибки
+		var grpcCode codes.Code
+		switch {
+		case errors.Is(err, services.ErrInvalidCredentials):
+			grpcCode = codes.Unauthenticated
+		case errors.Is(err, services.ErrUserNotFound):
+			grpcCode = codes.NotFound
 
-			return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
-		
+		default:
+			grpcCode = codes.Internal
+		}
+
+		return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
+
 	}
 	return &pb.LoginUserResponse{
 		RefreshToken: jwt.RefreshToken,
@@ -229,13 +229,13 @@ func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtif
 func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactRequest) (*pb.GetArtifactResponse, error) {
 
 	slog.Info("AuthServer GetArtifact")
-user, err := getUserFomCtx(ctx, s.tokenService)
+	user, err := getUserFomCtx(ctx, s.tokenService)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
 		return nil, status.Error(codes.Unauthenticated, "failed to get user")
 	}
 
-	art,err := s.artifactService.GetArtifactByID(ctx, user.ID, req.ArtifactId)
+	art, err := s.artifactService.GetArtifactByID(ctx, user.ID, req.ArtifactId)
 	if err != nil {
 		logger.Error(fmt.Sprintf("ArtifactServer CreateArtifact Failed to create artifact: %v", err))
 		return nil, status.Error(codes.Internal, "failed to create artifact")
@@ -395,23 +395,23 @@ func (s *ArtifactServer) Sync(stream pb.ArtifactService_SyncServer) error {
 }
 
 func (s *ArtifactServer) GetArtifactDownloadURL(ctx context.Context, req *pb.GetArtifactDownloadURLRequest) (*pb.GetArtifactDownloadURLResponse, error) {
-    logger.Info("ArtifactServer GetArtifactDownloadURL")
-    
-    user, err := getUserFomCtx(ctx, s.tokenService)
-    if err != nil {
-        logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
-        return nil, status.Error(codes.Unauthenticated, "failed to get user")
-    }
+	logger.Info("ArtifactServer GetArtifactDownloadURL")
 
-    downloadURL, err := s.artifactService.GetDownloadURL(ctx, user.ID, req.ArtifactId)
-    if err != nil {
-        logger.Error(fmt.Sprintf("Failed to get download URL: %v", err))
-        return nil, status.Error(codes.Internal, "failed to get download URL")
-    }
+	user, err := getUserFomCtx(ctx, s.tokenService)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user")
+	}
 
-    return &pb.GetArtifactDownloadURLResponse{
-        DownloadUrl: downloadURL,
-    }, nil
+	downloadURL, err := s.artifactService.GetDownloadURL(ctx, user.ID, req.ArtifactId)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get download URL: %v", err))
+		return nil, status.Error(codes.Internal, "failed to get download URL")
+	}
+
+	return &pb.GetArtifactDownloadURLResponse{
+		DownloadUrl: downloadURL,
+	}, nil
 }
 
 func getUserFomCtx(ctx context.Context, tokenService TokenKeeper) (*dto.UserRepoDTO, error) {

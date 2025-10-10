@@ -53,7 +53,7 @@ func (m mainMenuModel) handleSelection() tea.Cmd {
 		case 2: // Настройки
 			return navigateToMsg{state: settingsState}
 		case 3: // Выйти
-		logger.Info("Выход из приложения")
+			logger.Info("Выход из приложения")
 			return logoutMsg{}
 		}
 		return nil

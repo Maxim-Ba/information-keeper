@@ -116,3 +116,17 @@ go run cmd/client/main.go
 - Автоматическая синхронизация при подключении
 - Real-time обновления между клиентами
 - История изменений
+
+
+## Development
+
+### On Windows
+
+Install make using Chocolatey:
+```powershell
+choco install make
+```
+### Run linters
+```bash 
+make check
+```

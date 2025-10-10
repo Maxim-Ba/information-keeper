@@ -51,12 +51,14 @@ func (i artifactTypeItem) FilterValue() string { return i.name }
 
 // Структуры данных для разных типов артефактов
 type TextData domain.TextData
+
 //  struct {
 // 	Content string `json:"content"`
 // 	Title   string `json:"title,omitempty"`
 // }
 
 type LoginPasswordData domain.LoginPasswordData
+
 // struct {
 // 	Login    string `json:"login"`
 // 	Password string `json:"password"`
@@ -65,6 +67,7 @@ type LoginPasswordData domain.LoginPasswordData
 // }
 
 type BankCardData domain.BankCardData
+
 // struct {
 // 	Number     string `json:"number"`
 // 	Holder     string `json:"holder"`
@@ -112,7 +115,7 @@ func (d *BankCardData) ToBinary() ([]byte, error) {
 }
 
 func (d *BankCardData) GetMetaInfo() string {
-	
+
 	return "Банковская карта"
 }
 
@@ -364,7 +367,7 @@ func (s createArtifactScreen) validateInputs() bool {
 }
 
 func (s createArtifactScreen) submitArtifact() tea.Cmd {
-	        logger.Info("Начало создания артефакта", "type", s.artifactType)
+	logger.Info("Начало создания артефакта", "type", s.artifactType)
 
 	return func() tea.Msg {
 		var payload []byte
@@ -397,10 +400,10 @@ func (s createArtifactScreen) submitArtifact() tea.Cmd {
 			}
 			cvv, err := strconv.ParseUint(s.inputs["cvv"].Value(), 10, 64)
 			if err != nil {
-				logger.Error( "Ошибка парсинга CVV:", err)
+				logger.Error("Ошибка парсинга CVV:", err)
 			}
 			data := &BankCardData{
-				Number:    n ,
+				Number:     n,
 				Holder:     s.inputs["holder"].Value(),
 				ExpiryDate: s.inputs["expiry"].Value(),
 				CVV:        cvv,
@@ -429,9 +432,9 @@ func (s createArtifactScreen) submitArtifact() tea.Cmd {
 			metaInfo = data.GetMetaInfo()
 		}
 		if err != nil {
-				logger.Error("Ошибка подготовки данных:", err)
-			}
-        logger.Info("Артефакт подготовлен", "metaInfo", metaInfo)
+			logger.Error("Ошибка подготовки данных:", err)
+		}
+		logger.Info("Артефакт подготовлен", "metaInfo", metaInfo)
 
 		if err != nil {
 			return artifactCreateResultMsg{
@@ -471,65 +474,65 @@ func (s createArtifactScreen) submitArtifact() tea.Cmd {
 }
 
 func (s createArtifactScreen) View() string {
-    switch s.state {
-    case selectTypeScreenState:
-        view := s.typeSelector.View()
-        // Добавляем информацию о выбранном элементе
-        if selected, ok := s.typeSelector.SelectedItem().(artifactTypeItem); ok {
-            view += fmt.Sprintf("\n\n📋 Выбран: %s - %s", selected.name, selected.desc)
-        }
-        return view + "\n\n↑/↓ - навигация • Enter - выбор • Esc - назад"
+	switch s.state {
+	case selectTypeScreenState:
+		view := s.typeSelector.View()
+		// Добавляем информацию о выбранном элементе
+		if selected, ok := s.typeSelector.SelectedItem().(artifactTypeItem); ok {
+			view += fmt.Sprintf("\n\n📋 Выбран: %s - %s", selected.name, selected.desc)
+		}
+		return view + "\n\n↑/↓ - навигация • Enter - выбор • Esc - назад"
 
-    case fillDataScreenState:
-        var b strings.Builder
-        b.WriteString("➕ Создание артефакта\n\n")
+	case fillDataScreenState:
+		var b strings.Builder
+		b.WriteString("➕ Создание артефакта\n\n")
 
-        // Показываем тип создаваемого артефакта
-        typeName := ""
-        switch s.artifactType {
-        case proto.ArtifactTypeEnum_TEXT:
-            typeName = "📝 Текст"
-        case proto.ArtifactTypeEnum_LOGIN_PASSWORD:
-            typeName = "🔐 Логин/Пароль"
-        case proto.ArtifactTypeEnum_BANK_CARD:
-            typeName = "💳 Банковская карта"
-        case proto.ArtifactTypeEnum_BINARY:
-            typeName = "📎 Файл"
-        }
-        b.WriteString(fmt.Sprintf("Тип: %s\n", typeName))
-        b.WriteString(fmt.Sprintf("Активное поле: %d\n\n", s.focusIndex)) // Отладочная информация
+		// Показываем тип создаваемого артефакта
+		typeName := ""
+		switch s.artifactType {
+		case proto.ArtifactTypeEnum_TEXT:
+			typeName = "📝 Текст"
+		case proto.ArtifactTypeEnum_LOGIN_PASSWORD:
+			typeName = "🔐 Логин/Пароль"
+		case proto.ArtifactTypeEnum_BANK_CARD:
+			typeName = "💳 Банковская карта"
+		case proto.ArtifactTypeEnum_BINARY:
+			typeName = "📎 Файл"
+		}
+		b.WriteString(fmt.Sprintf("Тип: %s\n", typeName))
+		b.WriteString(fmt.Sprintf("Активное поле: %d\n\n", s.focusIndex)) // Отладочная информация
 
-        if s.submitting {
-            b.WriteString("⏳ Создание...\n\n")
-            return b.String()
-        }
+		if s.submitting {
+			b.WriteString("⏳ Создание...\n\n")
+			return b.String()
+		}
 
-        fieldNames := s.getFieldNames()
-        for i, fieldName := range fieldNames {
-            input := s.inputs[fieldName]
-            // Показываем курсор для активного поля
-            cursor := " "
-            if i == s.focusIndex {
-                cursor = "▶"
-            }
-            
-            // Показываем, какое поле активно
-            status := " "
-            if input.Focused() {
-                status = "●"
-            }
-            
-            b.WriteString(fmt.Sprintf("%s [%s] %s:\n%s\n\n", cursor, status, input.Placeholder, input.View()))
-        }
+		fieldNames := s.getFieldNames()
+		for i, fieldName := range fieldNames {
+			input := s.inputs[fieldName]
+			// Показываем курсор для активного поля
+			cursor := " "
+			if i == s.focusIndex {
+				cursor = "▶"
+			}
 
-        b.WriteString("Enter - создать • Esc - назад • Tab - переключение полей\n")
+			// Показываем, какое поле активно
+			status := " "
+			if input.Focused() {
+				status = "●"
+			}
 
-        if !s.validateInputs() {
-            b.WriteString("\n⚠️  Заполните обязательные поля")
-        }
+			b.WriteString(fmt.Sprintf("%s [%s] %s:\n%s\n\n", cursor, status, input.Placeholder, input.View()))
+		}
 
-        return b.String()
-    }
+		b.WriteString("Enter - создать • Esc - назад • Tab - переключение полей\n")
 
-    return ""
+		if !s.validateInputs() {
+			b.WriteString("\n⚠️  Заполните обязательные поля")
+		}
+
+		return b.String()
+	}
+
+	return ""
 }

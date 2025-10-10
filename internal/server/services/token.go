@@ -25,18 +25,18 @@ type TokenService struct {
 }
 
 // Remove implements TokenServiceInterface.
-func (s *TokenService) Remove(ctx context.Context,token *JWTToken) error {
-	if err := s.InvalidateRefreshToken(ctx,token.RefreshToken); err != nil {
+func (s *TokenService) Remove(ctx context.Context, token *JWTToken) error {
+	if err := s.InvalidateRefreshToken(ctx, token.RefreshToken); err != nil {
 		return fmt.Errorf("failed to invalidate refresh token: %w", err)
 	}
-	if err := s.InvalidateToken(ctx,token.AcssToken, ); err != nil {
+	if err := s.InvalidateToken(ctx, token.AcssToken); err != nil {
 		return fmt.Errorf("failed to invalidate token: %w", err)
 	}
 	return nil
 }
 
 type UserRepositoryInterface interface {
-	GetUserByID(ctx context.Context,id string) (*dto.UserRepoDTO, error)
+	GetUserByID(ctx context.Context, id string) (*dto.UserRepoDTO, error)
 }
 
 type CustomClaims struct {
@@ -56,24 +56,23 @@ func NewTokenService(
 		config: config, userRepository: userRepository, tokenRepository: tokenRepository}
 }
 
-
 func (s *TokenService) AddToBlacklist(ctx context.Context, token string, expiry time.Time) error {
 	if s.tokenRepository == nil {
 		return fmt.Errorf("token repository not configured")
 	}
 
-	return s.tokenRepository.AddToBlacklist(ctx , token, expiry)
+	return s.tokenRepository.AddToBlacklist(ctx, token, expiry)
 }
-func (s *TokenService) IsInBlacklist(ctx context.Context,token string) (bool, error) {
+func (s *TokenService) IsInBlacklist(ctx context.Context, token string) (bool, error) {
 	if s.tokenRepository == nil {
 		return false, fmt.Errorf("token repository not configured")
 	}
 
-	return s.tokenRepository.IsInBlacklist(ctx , token)
+	return s.tokenRepository.IsInBlacklist(ctx, token)
 }
 
 // Add token to blacklist
-func (s *TokenService) InvalidateToken(ctx context.Context,token string,) error {
+func (s *TokenService) InvalidateToken(ctx context.Context, token string) error {
 	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
 	// Парсим токен, чтобы получить время истечения
 	claims, err := s.validateToken(token, false)
@@ -82,13 +81,13 @@ func (s *TokenService) InvalidateToken(ctx context.Context,token string,) error 
 	}
 
 	// Добавляем в черный список через репозиторий
-	if err := s.AddToBlacklist(ctx,token, claims.ExpiresAt.Time); err != nil {
+	if err := s.AddToBlacklist(ctx, token, claims.ExpiresAt.Time); err != nil {
 		return fmt.Errorf("failed to add token to blacklist: %w", err)
 	}
 
 	return nil
 }
-func (s *TokenService) InvalidateRefreshToken(ctx context.Context,token string) error {
+func (s *TokenService) InvalidateRefreshToken(ctx context.Context, token string) error {
 	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
 	// Парсим токен, чтобы получить время истечения
 	claims, err := s.validateToken(token, true)
@@ -97,16 +96,17 @@ func (s *TokenService) InvalidateRefreshToken(ctx context.Context,token string) 
 	}
 
 	// Добавляем в черный список через репозиторий
-	if err := s.AddToBlacklist(ctx,token, claims.ExpiresAt.Time); err != nil {
+	if err := s.AddToBlacklist(ctx, token, claims.ExpiresAt.Time); err != nil {
 		return fmt.Errorf("failed to add token to blacklist: %w", err)
 	}
 
 	return nil
 }
+
 // ValidateTokenWithBlacklist checks if token is valid and not in blacklist
-func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context,token string) error {
+func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context, token string) error {
 	// Сначала проверяем в черном списке
-	inBlacklist, err := s.IsInBlacklist(ctx,token)
+	inBlacklist, err := s.IsInBlacklist(ctx, token)
 	if err != nil {
 		return fmt.Errorf("failed to check blacklist: %w", err)
 	}
@@ -119,8 +119,8 @@ func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context,token stri
 }
 
 // ValidateRefreshTokenWithBlacklist check refresh token and not in blacklist
-func (s *TokenService) ValidateRefreshTokenWithBlacklist(ctx context.Context,token string) error {
-	inBlacklist, err := s.IsInBlacklist(ctx,token)
+func (s *TokenService) ValidateRefreshTokenWithBlacklist(ctx context.Context, token string) error {
+	inBlacklist, err := s.IsInBlacklist(ctx, token)
 	if err != nil {
 		return fmt.Errorf("failed to check blacklist: %w", err)
 	}
@@ -169,8 +169,8 @@ func (s *TokenService) GenerateToken(user *dto.UserRepoDTO) (*JWTToken, error) {
 	}, nil
 }
 
-func (s *TokenService) RefreshToken(ctx context.Context,refreshToken string) (*JWTToken, error) {
-	inBlacklist, err := s.IsInBlacklist(ctx,refreshToken)
+func (s *TokenService) RefreshToken(ctx context.Context, refreshToken string) (*JWTToken, error) {
+	inBlacklist, err := s.IsInBlacklist(ctx, refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check blacklist: %w", err)
 	}
@@ -185,11 +185,11 @@ func (s *TokenService) RefreshToken(ctx context.Context,refreshToken string) (*J
 	}
 
 	// Добавляем использованный refresh token в черный список через репозиторий
-	if err := s.AddToBlacklist(ctx,refreshToken, claims.ExpiresAt.Time); err != nil {
+	if err := s.AddToBlacklist(ctx, refreshToken, claims.ExpiresAt.Time); err != nil {
 		return nil, fmt.Errorf("failed to blacklist used refresh token: %w", err)
 	}
 
-	user, err := s.userRepository.GetUserByID(context.TODO(),claims.Subject)
+	user, err := s.userRepository.GetUserByID(context.TODO(), claims.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
@@ -260,20 +260,20 @@ func (s *TokenService) validateToken(tokenString string, isRefresh bool) (*Custo
 	return nil, fmt.Errorf("invalid token claims")
 }
 
-func (s *TokenService)  GetAccessTokenFromContext(ctx context.Context) (string, error) {
+func (s *TokenService) GetAccessTokenFromContext(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return "", ErrMetaDataNotProvided
-		}
-		tokens := md["authorization"]
-		logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
-		if len(tokens) == 0 {
-			return "", ErrAuthTokenNotProvided
-		}
-		token := strings.TrimPrefix(tokens[0], "Bearer ")
-		if err := s.ValidateTokenWithBlacklist(ctx, token); err != nil {
-			logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
-			return "", ErrInvalidToken
-		}
-		return token, nil
+	if !ok {
+		return "", ErrMetaDataNotProvided
+	}
+	tokens := md["authorization"]
+	logger.Info(fmt.Sprintf("AuthInterceptor tokens: %v", tokens))
+	if len(tokens) == 0 {
+		return "", ErrAuthTokenNotProvided
+	}
+	token := strings.TrimPrefix(tokens[0], "Bearer ")
+	if err := s.ValidateTokenWithBlacklist(ctx, token); err != nil {
+		logger.Error(fmt.Sprintf("AuthInterceptor failed to validate token: %v", err))
+		return "", ErrInvalidToken
+	}
+	return token, nil
 }

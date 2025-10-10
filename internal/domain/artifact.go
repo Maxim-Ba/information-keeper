@@ -57,7 +57,7 @@ type BankCardData struct {
 	Number     uint64 `json:"number"`
 	Holder     string `json:"holder"`
 	ExpiryDate string `json:"expiry_date"` // Формат "MM/YY"
-	CVV        uint64   `json:"cvv,omitempty"`
+	CVV        uint64 `json:"cvv,omitempty"`
 }
 
 type BinaryData struct {

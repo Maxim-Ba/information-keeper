@@ -95,17 +95,17 @@ func (m artifactDetailModel) Update(msg tea.Msg) (artifactDetailModel, tea.Cmd) 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "up", "k":
+		case UP, "k":
 			if m.cursor > 0 {
 				m.cursor--
 			}
-		case "down", "j":
+		case DOWN, "j":
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
-		case "enter", " ":
+		case ENTER, " ":
 			return m, m.handleSelection()
-		case "esc":
+		case ESC:
 			return m, func() tea.Msg { return navigateToMsg{state: artifactsState} }
 		}
 	}
@@ -135,7 +135,7 @@ func (m artifactDetailModel) View() string {
 	for i, choice := range m.choices {
 		cursor := " "
 		if m.cursor == i {
-			cursor = "▶"
+			cursor = ARROW
 		}
 		b.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
 	}
@@ -160,11 +160,11 @@ func InitialModel(grpcClient *client.GRPCClient) model {
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -225,7 +225,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// После успешного logout возвращаемся к состоянию авторизации
 		m.state = authState
 		m.auth = newAuthModel()
-		m.logout()
+		err:= m.logout()
+		if err != nil {
+			logger.Error("Ошибка при выходе из системы", "error", err)
+		}
 		m.successMessage = "Вы успешно вышли из системы"
 		return m, tea.Tick(3*time.Second, func(time.Time) tea.Msg {
 			return clearMessageMsg{}
@@ -306,14 +309,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.artifactDetail, cmd = m.artifactDetail.Update(msg)
 	case viewArtifactDetailsState:
 		m.viewArtifactDetails, cmd = m.viewArtifactDetails.Update(msg)
-
 	}
 
 	return m, cmd
 }
 
-func (m model) View() string {
-
+func (m *model) View() string {
 	if m.err != nil {
 		return errorStyle.Render(fmt.Sprintf("Ошибка: %v", m.err))
 	}
@@ -347,7 +348,7 @@ func (m model) View() string {
 	)
 }
 
-func (m model) deleteArtifact(artifact *proto.Artifact) tea.Cmd {
+func (m *model) deleteArtifact(artifact *proto.Artifact) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 		_, err := m.client.DeleteArtifact(ctx, artifact.Id)
@@ -359,7 +360,7 @@ func (m model) deleteArtifact(artifact *proto.Artifact) tea.Cmd {
 	}
 }
 
-func (m model) logout() tea.Msg {
+func (m *model) logout() tea.Msg {
 	logger.Info("Выполнение Logout")
 
 	ctx := context.Background()
@@ -381,7 +382,7 @@ func (m model) logout() tea.Msg {
 	return logoutMsg{}
 }
 
-// Сообщения для передачи между компонентами
+// Сообщения для передачи между компонентами.
 type errorMsg error
 type successMsg string
 type clearMessageMsg struct{}

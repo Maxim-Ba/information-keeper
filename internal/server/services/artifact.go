@@ -41,7 +41,6 @@ func NewArtifactService(
 }
 
 func (s *ArtifactService) GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error) {
-
 	artifacts, err := s.artifactRepository.GetArtifacts(ctx, userID, page, onpage)
 
 	if err != nil {
@@ -91,7 +90,7 @@ func (s *ArtifactService) CreateArtifact(ctx context.Context, userID string, req
 	}
 
 	// Отправляем событие синхронизации
-	pbArtifact := domain.DomainToPBArtifact(a)
+	pbArtifact := domain.ToPBArtifact(a)
 	s.syncManager.Broadcast(userID,
 		&proto.SyncEvent{
 			EventId:   eventidgen.GenerateEventID(),
@@ -139,7 +138,7 @@ func (s *ArtifactService) UpdateArtifact(ctx context.Context, userID string, art
 		return fmt.Errorf("ArtifactService UpdateArtifact: %w", err)
 	}
 
-	pbArtifact := domain.DomainToPBArtifact(a)
+	pbArtifact := domain.ToPBArtifact(a)
 	s.syncManager.Broadcast(userID, &proto.SyncEvent{
 		EventId:   eventidgen.GenerateEventID(),
 		Timestamp: time.Now().Unix(),
@@ -190,7 +189,7 @@ func (s *ArtifactService) GetArtifactByID(ctx context.Context, userID string, id
 	}
 }
 
-// Get with one time password (delete after send response)
+// Get with one time password (delete after send response).
 func (s *ArtifactService) GetWithOTP(ctx context.Context, userID string, id string) (*domain.Artifact, error) {
 	artifact, err := s.artifactRepository.GetArtifactByID(ctx, id)
 	if err != nil {

@@ -88,7 +88,6 @@ func (s *AuthService) Logout(ctx context.Context, token *JWTToken) error {
 }
 
 func (s *AuthService) Register(ctx context.Context, login, email, password string) (*JWTToken, error) {
-
 	if err := s.validatePassword(password); err != nil {
 		return nil, err
 	}
@@ -111,11 +110,9 @@ func (s *AuthService) Register(ctx context.Context, login, email, password strin
 	}
 	s.SendEmailConfirmation(ctx, user.Email)
 	return jwt, nil
-
 }
 
 func (s *AuthService) ChangePassword(ctx context.Context, data *dto.ChangePassword) error {
-
 	if err := s.validatePassword(data.NewPassword); err != nil {
 		return err
 	}
@@ -124,7 +121,6 @@ func (s *AuthService) ChangePassword(ctx context.Context, data *dto.ChangePasswo
 		return fmt.Errorf("AuthService ChangePassword: %w", err)
 	}
 	return nil
-
 }
 func (s *AuthService) RestorePassword(ctx context.Context, email string) error {
 	_, err := s.userRepository.GetUserByEmail(ctx, email)
@@ -142,12 +138,11 @@ func (s *AuthService) SendEmailConfirmation(ctx context.Context, email string) e
 	}
 	if user == nil {
 		return fmt.Errorf("AuthService GetUserByEmail: %w", err)
-
 	}
 	// TODO send email
-	//TODO Change EmailConfirmed method
+	// TODO Change EmailConfirmed method
 	user.EmailConfirmed = true
-	user, err = s.userRepository.Update(ctx, user)
+	_, err = s.userRepository.Update(ctx, user)
 	if err != nil {
 		return fmt.Errorf("AuthService Update: %w", err)
 	}

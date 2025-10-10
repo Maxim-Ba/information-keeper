@@ -1,3 +1,5 @@
+// Package db предоставляет функциональность для работы с базой данных,
+// включая подключение и применение миграций.
 package db
 
 import (
@@ -10,10 +12,14 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// DBinstance глобальная переменная для хранения подключения к базе данных.
 var DBinstance *sql.DB
 
+// New создает новое подключение к базе данных и применяет миграции.
+// connStr - строка подключения к базе данных.
+// migrationsPath - путь к директории с файлами миграций.
+// Возвращает подключение к базе данных или ошибку.
 func New(connStr, migrationsPath string) (*sql.DB, error) {
-
 	pool, err := sql.Open("pgx", connStr)
 
 	if err != nil {
@@ -36,6 +42,8 @@ func New(connStr, migrationsPath string) (*sql.DB, error) {
 	return instance, nil
 }
 
+// applyMigrationsWithNewConnection применяет миграции к базе данных,
+// используя отдельное подключение.
 func applyMigrationsWithNewConnection(connStr, migrationsPath string) error {
 	migrationDB, err := sql.Open("pgx", connStr)
 	if err != nil {

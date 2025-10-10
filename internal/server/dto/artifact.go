@@ -2,6 +2,7 @@ package dto
 
 import "time"
 
+// ArtifactDTO - структура для передачи данных артефакта
 type ArtifactDTO struct {
 	ID        string
 	OwerID    string
@@ -13,6 +14,7 @@ type ArtifactDTO struct {
 	Link      string
 }
 
+// ArtifactTypeDTO - структура для передачи данных типа артефакта
 type ArtifactTypeDTO struct {
 	Id   int
 	Name string

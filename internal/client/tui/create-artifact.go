@@ -17,12 +17,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(2)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
-)
-
-// Внутренняя структура для экрана создания артефакта
+// Внутренняя структура для экрана создания артефакта.
 type createArtifactScreen struct {
 	state        createArtifactScreenState
 	typeSelector list.Model
@@ -49,32 +44,13 @@ func (i artifactTypeItem) Title() string       { return i.name }
 func (i artifactTypeItem) Description() string { return i.desc }
 func (i artifactTypeItem) FilterValue() string { return i.name }
 
-// Структуры данных для разных типов артефактов
 type TextData domain.TextData
-
-//  struct {
-// 	Content string `json:"content"`
-// 	Title   string `json:"title,omitempty"`
-// }
 
 type LoginPasswordData domain.LoginPasswordData
 
-// struct {
-// 	Login    string `json:"login"`
-// 	Password string `json:"password"`
-// 	Site     string `json:"site,omitempty"`
-// 	Notes    string `json:"notes,omitempty"`
-// }
-
 type BankCardData domain.BankCardData
 
-// struct {
-// 	Number     string `json:"number"`
-// 	Holder     string `json:"holder"`
-// 	ExpiryDate string `json:"expiry_date"`
-// 	CVV        string `json:"cvv,omitempty"`
-// }
-
+// BankCardData struct
 type BinaryData struct {
 	FileName    string `json:"file_name"`
 	ContentType string `json:"content_type"`
@@ -82,11 +58,12 @@ type BinaryData struct {
 	Data        []byte `json:"data"`
 }
 
-// Методы для TextData
+// Методы для TextData.
 func (d *TextData) ToBinary() ([]byte, error) {
 	return json.Marshal(d)
 }
 
+// GetMetaInfo возвращает мета-информацию
 func (d *TextData) GetMetaInfo() string {
 	if d.Title != "" {
 		return d.Title
@@ -97,11 +74,12 @@ func (d *TextData) GetMetaInfo() string {
 	return d.Content
 }
 
-// Методы для LoginPasswordData
+// Методы для LoginPasswordData.
 func (d *LoginPasswordData) ToBinary() ([]byte, error) {
 	return json.Marshal(d)
 }
 
+// GetMetaInfo возвращает мета-информацию
 func (d *LoginPasswordData) GetMetaInfo() string {
 	if d.Site != "" {
 		return fmt.Sprintf("Логин для %s", d.Site)
@@ -109,17 +87,17 @@ func (d *LoginPasswordData) GetMetaInfo() string {
 	return "Логин и пароль"
 }
 
-// Методы для BankCardData
+// Методы для BankCardData.
 func (d *BankCardData) ToBinary() ([]byte, error) {
 	return json.Marshal(d)
 }
 
+// GetMetaInfo возвращает мета-информацию
 func (d *BankCardData) GetMetaInfo() string {
-
 	return "Банковская карта"
 }
 
-// Методы для BinaryData
+// ToBinary Методы для BinaryData.
 func (d *BinaryData) ToBinary() ([]byte, error) {
 	return d.Data, nil
 }
@@ -131,7 +109,7 @@ func (d *BinaryData) GetMetaInfo() string {
 	return d.FileName
 }
 
-// Функции для createArtifactModel
+// Функции для createArtifactModel.
 func newCreateArtifactModel() createArtifactModel {
 	return createArtifactModel{
 		screen: newCreateArtifactScreen(),
@@ -148,11 +126,12 @@ func (m createArtifactModel) Update(msg tea.Msg) (createArtifactModel, tea.Cmd) 
 	return m, cmd
 }
 
+// View для createArtifactModel.
 func (m createArtifactModel) View() string {
 	return m.screen.View()
 }
 
-// Функции для createArtifactScreen
+// Функции для createArtifactScreen.
 func newCreateArtifactScreen() createArtifactScreen {
 	// Список типов артефактов
 	items := []list.Item{
@@ -185,6 +164,7 @@ func (s createArtifactScreen) Init() tea.Cmd {
 	return nil
 }
 
+// Update для createArtifactScreen.
 func (s createArtifactScreen) Update(msg tea.Msg) (createArtifactScreen, tea.Cmd) {
 	switch s.state {
 	case selectTypeScreenState:
@@ -199,9 +179,9 @@ func (s createArtifactScreen) updateTypeSelection(msg tea.Msg) (createArtifactSc
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
+		case ESC:
 			return s, func() tea.Msg { return navigateToMsg{state: mainMenuState} }
-		case "enter":
+		case ENTER:
 			if selected, ok := s.typeSelector.SelectedItem().(artifactTypeItem); ok {
 				s.artifactType = selected.typ
 				s.state = fillDataScreenState
@@ -219,15 +199,15 @@ func (s createArtifactScreen) updateDataInput(msg tea.Msg) (createArtifactScreen
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
+		case ESC:
 			s.state = selectTypeScreenState
 			return s, nil
-		case "tab", "shift+tab", "up", "down":
+		case "tab", SHIFT_TAB, UP, DOWN:
 			// Навигация по полям
 			key := msg.String()
 			fieldNames := s.getFieldNames()
 
-			if key == "up" || key == "shift+tab" {
+			if key == UP || key == SHIFT_TAB {
 				s.focusIndex--
 			} else {
 				s.focusIndex++
@@ -249,7 +229,7 @@ func (s createArtifactScreen) updateDataInput(msg tea.Msg) (createArtifactScreen
 				s.inputs[fieldName] = model
 			}
 			return s, nil
-		case "enter":
+		case ENTER:
 			if s.submitting {
 				return s, nil
 			}
@@ -282,24 +262,24 @@ func (s *createArtifactScreen) initializeInputs() {
 
 	switch s.artifactType {
 	case proto.ArtifactTypeEnum_TEXT:
-		s.inputs["title"] = createInput("Название", "")
-		s.inputs["content"] = createInput("Содержимое", "")
+		s.inputs["title"] = createInput("Название")
+		s.inputs["content"] = createInput("Содержимое")
 
 	case proto.ArtifactTypeEnum_LOGIN_PASSWORD:
-		s.inputs["site"] = createInput("Сайт", "")
-		s.inputs["login"] = createInput("Логин", "")
-		s.inputs["password"] = createInput("Пароль", "")
-		s.inputs["notes"] = createInput("Заметки (опционально)", "")
+		s.inputs["site"] = createInput("Сайт")
+		s.inputs["login"] = createInput("Логин")
+		s.inputs["password"] = createInput("Пароль")
+		s.inputs["notes"] = createInput("Заметки (опционально)")
 
 	case proto.ArtifactTypeEnum_BANK_CARD:
-		s.inputs["number"] = createInput("Номер карты", "")
-		s.inputs["holder"] = createInput("Держатель карты", "")
-		s.inputs["expiry"] = createInput("Срок действия (MM/YY)", "")
-		s.inputs["cvv"] = createInput("CVV (опционально)", "")
+		s.inputs["number"] = createInput("Номер карты")
+		s.inputs["holder"] = createInput("Держатель карты")
+		s.inputs["expiry"] = createInput("Срок действия (MM/YY)")
+		s.inputs["cvv"] = createInput("CVV (опционально)")
 
 	case proto.ArtifactTypeEnum_BINARY:
-		s.inputs["filepath"] = createInput("Путь к файлу", "")
-		s.inputs["description"] = createInput("Описание (опционально)", "")
+		s.inputs["filepath"] = createInput("Путь к файлу")
+		s.inputs["description"] = createInput("Описание (опционально)")
 	}
 
 	if len(s.inputs) > 0 {
@@ -319,10 +299,10 @@ func (s *createArtifactScreen) initializeInputs() {
 	}
 }
 
-func createInput(placeholder, value string) textinput.Model {
+func createInput(placeholder string) textinput.Model {
 	ti := textinput.New()
 	ti.Placeholder = placeholder
-	ti.SetValue(value)
+	ti.SetValue("")
 	ti.Width = 40
 	return ti
 }
@@ -513,7 +493,7 @@ func (s createArtifactScreen) View() string {
 			// Показываем курсор для активного поля
 			cursor := " "
 			if i == s.focusIndex {
-				cursor = "▶"
+				cursor = ARROW
 			}
 
 			// Показываем, какое поле активно

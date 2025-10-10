@@ -60,7 +60,7 @@ func (m *MockUserRepository) Update(ctx context.Context, user *dto.UserRepoDTO) 
 	return args.Get(0).(*dto.UserRepoDTO), args.Error(1)
 }
 
-// MockTokenService реализация TokenService для тестов
+// MockTokenService реализация TokenService для тестов.
 type MockTokenService struct {
 	mock.Mock
 }
@@ -87,7 +87,7 @@ func (m *MockTokenService) GenerateToken(user *dto.UserRepoDTO) (*JWTToken, erro
 	return args.Get(0).(*JWTToken), args.Error(1)
 }
 
-// MockAppConfig реализация AppConfig для тестов
+// MockAppConfig реализация AppConfig для тестов.
 type MockAppConfig struct {
 	mock.Mock
 }

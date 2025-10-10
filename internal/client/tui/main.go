@@ -18,7 +18,8 @@ func StartTUIWithContext(ctx context.Context, grpcClient *client.GRPCClient) err
 		return fmt.Errorf("не удалось подключиться к серверу: %v", err)
 	}
 
-	p := tea.NewProgram(InitialModel(grpcClient), tea.WithAltScreen())
+	model := InitialModel(grpcClient)
+	p := tea.NewProgram(&model, tea.WithAltScreen())
 
 	go func() {
 		if _, err := p.Run(); err != nil {

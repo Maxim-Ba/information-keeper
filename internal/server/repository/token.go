@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
+// TokenRepository provides methods for token blacklist operations
 type TokenRepository struct {
 	db DBInterface
 }
 
+// AddToBlacklist adds a token to the blacklist with expiration time
 func (t *TokenRepository) AddToBlacklist(ctx context.Context, token string, expiry time.Time) error {
 	query := `
 		INSERT INTO token_blacklist (token, expiry)
@@ -27,6 +29,7 @@ func (t *TokenRepository) AddToBlacklist(ctx context.Context, token string, expi
 	return nil
 }
 
+// IsInBlacklist checks if a token is in the blacklist and not expired
 func (t *TokenRepository) IsInBlacklist(ctx context.Context, token string) (bool, error) {
 	query := `
 		SELECT EXISTS(
@@ -47,6 +50,7 @@ func (t *TokenRepository) IsInBlacklist(ctx context.Context, token string) (bool
 	return exists, nil
 }
 
+// CleanExpiredTokens removes expired tokens from the blacklist
 func (t *TokenRepository) CleanExpiredTokens(ctx context.Context) error {
 	query := `
 		DELETE FROM token_blacklist 
@@ -61,6 +65,7 @@ func (t *TokenRepository) CleanExpiredTokens(ctx context.Context) error {
 	return nil
 }
 
+// NewTokenRepository creates a new instance of TokenRepository
 func NewTokenRepository(db DBInterface) *TokenRepository {
 	return &TokenRepository{
 		db: db,

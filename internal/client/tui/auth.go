@@ -6,7 +6,6 @@ import (
 
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -14,7 +13,6 @@ import (
 type authModel struct {
 	inputs     []textinput.Model
 	focusIndex int
-	viewport   viewport.Model
 	isLogin    bool
 	submitting bool
 	err        error
@@ -58,7 +56,7 @@ func (m authModel) Update(msg tea.Msg) (authModel, tea.Cmd) {
 			// Обработка навигации
 			s := msg.String()
 
-			if s == "enter" {
+			if s == ENTER {
 				if m.submitting {
 					return m, nil
 				}
@@ -68,9 +66,9 @@ func (m authModel) Update(msg tea.Msg) (authModel, tea.Cmd) {
 				return m, m.submitAuth()
 			}
 
-			if s == "tab" || s == "shift+tab" || s == "up" || s == "down" {
+			if s == "tab" || s == SHIFT_TAB || s == UP || s == DOWN {
 				// Смена фокуса между полями ввода
-				if s == "up" || s == "shift+tab" {
+				if s == UP || s == SHIFT_TAB {
 					m.focusIndex--
 				} else {
 					m.focusIndex++

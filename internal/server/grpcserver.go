@@ -121,13 +121,11 @@ func (s *HealthServer) Check(ctx context.Context, req *pb.HealthCheckRequest) (*
 	}, nil
 }
 
-// Реализация методов Auth сервиса
+// Реализация методов Auth сервиса.
 func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
-
 	logger.Info("AuthServer Login")
 	jwt, err := s.authService.Login(ctx, req.User.Login, req.User.Password)
 	if err != nil {
-
 		logger.Error("Ошибка при авторизации",
 			slog.String("error", err.Error()),
 			slog.String("login", req.User.Login),
@@ -146,7 +144,6 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 		}
 
 		return nil, status.Errorf(grpcCode, "AuthService Login: %v", err)
-
 	}
 	return &pb.LoginUserResponse{
 		RefreshToken: jwt.RefreshToken,
@@ -204,9 +201,8 @@ func (s *AuthServer) SendEmailConfirmation(ctx context.Context, req *pb.SendEmai
 	return &pb.SendEmailConfirmationResponse{}, nil
 }
 
-// Реализация методов ArtifactService
+// Реализация методов ArtifactService.
 func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtifactRequest) (*pb.CreateArtifactResponse, error) {
-
 	slog.Info("AuthServer CreateArtifact")
 	user, err := getUserFomCtx(ctx, s.tokenService)
 	if err != nil {
@@ -227,7 +223,6 @@ func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtif
 }
 
 func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactRequest) (*pb.GetArtifactResponse, error) {
-
 	slog.Info("AuthServer GetArtifact")
 	user, err := getUserFomCtx(ctx, s.tokenService)
 	if err != nil {
@@ -240,7 +235,7 @@ func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactReq
 		logger.Error(fmt.Sprintf("ArtifactServer CreateArtifact Failed to create artifact: %v", err))
 		return nil, status.Error(codes.Internal, "failed to create artifact")
 	}
-	pbArtifact := domain.DomainToPBArtifact(art)
+	pbArtifact := domain.ToPBArtifact(art)
 	return &pb.GetArtifactResponse{
 		Artifact: pbArtifact,
 	}, nil
@@ -260,7 +255,7 @@ func (s *ArtifactServer) ListArtifacts(ctx context.Context, req *pb.ListArtifact
 	}
 	pbArtifacts := make([]*pb.Artifact, 0, len(artifacts))
 	for _, artifact := range artifacts {
-		pbArtifact := domain.DomainToPBArtifact(&artifact)
+		pbArtifact := domain.ToPBArtifact(&artifact)
 		pbArtifacts = append(pbArtifacts, pbArtifact)
 	}
 

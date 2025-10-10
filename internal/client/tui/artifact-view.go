@@ -29,7 +29,7 @@ func newViewArtifactDetailsModel(artifact *proto.Artifact) viewArtifactDetailsMo
 	}
 }
 
-func (m viewArtifactDetailsModel) Init() tea.Cmd {
+func (m *viewArtifactDetailsModel) Init() tea.Cmd {
 	if m.artifact == nil {
 		logger.Error("❌ ОШИБКА: artifact is nil в viewArtifactDetailsModel.Init()")
 		m.loading = false
@@ -43,21 +43,21 @@ func (m viewArtifactDetailsModel) Init() tea.Cmd {
 	return m.loadArtifactContent
 }
 
-func (m viewArtifactDetailsModel) Update(msg tea.Msg) (viewArtifactDetailsModel, tea.Cmd) {
+func (m *viewArtifactDetailsModel) Update(msg tea.Msg) (viewArtifactDetailsModel, tea.Cmd) {
 	logger.Info("🔄 viewArtifactDetailsModel Update", "type", fmt.Sprintf("%T", msg))
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		logger.Info("⌨️ Обработка клавиши", "key", msg.String())
 		switch msg.String() {
-		case "esc", "q":
-			return m, func() tea.Msg { return navigateToMsg{state: artifactDetailState} }
+		case ESC, "q":
+			return *m, func() tea.Msg { return navigateToMsg{state: artifactDetailState} }
 		case "c":
 			// Копирование ссылки для бинарных файлов
 			if m.artifact.Type == proto.ArtifactTypeEnum_BINARY && m.artifact.Link != "" {
 				if err := copyToClipboard(m.artifact.Link); err != nil {
 					logger.Error("❌ Ошибка копирования в буфер", "error", err)
-					return m, func() tea.Msg {
+					return *m, func() tea.Msg {
 						displayURL := m.artifact.Link
 						if len(displayURL) > 100 {
 							displayURL = displayURL[:97] + "..."
@@ -65,7 +65,7 @@ func (m viewArtifactDetailsModel) Update(msg tea.Msg) (viewArtifactDetailsModel,
 						return successMsg(fmt.Sprintf("❌ Не удалось скопировать автоматически.\nСкопируйте ссылку вручную:\n%s", displayURL))
 					}
 				}
-				return m, func() tea.Msg {
+				return *m, func() tea.Msg {
 					return successMsg("✅ Ссылка скопирована в буфер обмена: " + m.artifact.Link)
 				}
 			}
@@ -79,10 +79,10 @@ func (m viewArtifactDetailsModel) Update(msg tea.Msg) (viewArtifactDetailsModel,
 		m.loading = false
 		m.error = msg.error
 	}
-	return m, nil
+	return *m, nil
 }
 
-func (m viewArtifactDetailsModel) View() string {
+func (m *viewArtifactDetailsModel) View() string {
 	if m.artifact == nil {
 		return errorStyle.Render("❌ Ошибка: артефакт не найден")
 	}
@@ -94,7 +94,7 @@ func (m viewArtifactDetailsModel) View() string {
 		"artifactType", m.artifact.Type)
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("📋 Детали артефакта\n\n"))
+	b.WriteString("📋 Детали артефакта\n\n")
 	b.WriteString(fmt.Sprintf("Название: %s\n", m.artifact.MetaInfo))
 	b.WriteString(fmt.Sprintf("Тип: %s\n", getArtifactTypeName(m.artifact.Type)))
 	b.WriteString(fmt.Sprintf("Создан: %s\n", time.Unix(m.artifact.CreatedAt, 0).Format("02.01.2006 15:04")))
@@ -133,7 +133,7 @@ func (m viewArtifactDetailsModel) View() string {
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("\n\nEsc - назад"))
+	b.WriteString("\n\nEsc - назад")
 	if m.artifact.Type == proto.ArtifactTypeEnum_BINARY && m.artifact.Link != "" {
 		b.WriteString(" • c - копировать ссылку")
 	}
@@ -147,7 +147,7 @@ func (m viewArtifactDetailsModel) View() string {
 
 	return style.Render(content)
 }
-func (m viewArtifactDetailsModel) loadArtifactContent() tea.Msg {
+func (m *viewArtifactDetailsModel) loadArtifactContent() tea.Msg {
 	logger.Info("🔄 Начало загрузки содержимого артефакта",
 		"artifactID", m.artifact.Id,
 		"type", m.artifact.Type,
@@ -176,8 +176,8 @@ func (m viewArtifactDetailsModel) loadArtifactContent() tea.Msg {
 	}
 
 	logger.Info("📥 Скачиваем содержимое по presigned URL", "url", downloadURL)
-
-	content, err := globalClient.DownloadContent(downloadURL)
+	ctx:= context.Background()
+	content, err := globalClient.DownloadContent(ctx, downloadURL)
 	if err != nil {
 		logger.Error("❌ Ошибка загрузки содержимого", "error", err)
 		return artifactContentErrorMsg{error: fmt.Sprintf("❌ Ошибка загрузки: %v", err)}
@@ -199,7 +199,7 @@ func parseDownloadedContent(artifactType proto.ArtifactTypeEnum, content []byte)
 		var data TextData
 		if err := json.Unmarshal(content, &data); err != nil {
 			// Если не удалось распарсить как JSON, показываем как plain text
-			return string(content), nil
+			return string(content), err
 		}
 		if data.Title != "" {
 			return fmt.Sprintf("Заголовок: %s\n\n%s", data.Title, data.Content), nil
@@ -225,10 +225,10 @@ func parseDownloadedContent(artifactType proto.ArtifactTypeEnum, content []byte)
 		if err := json.Unmarshal(content, &data); err != nil {
 			return string(content), nil
 		}
-		result := fmt.Sprintf("Номер карты: %s\nДержатель: %s\nСрок действия: %s",
+		result := fmt.Sprintf("Номер карты: %d\nДержатель: %s\nСрок действия: %s",
 			data.Number, data.Holder, data.ExpiryDate)
 		if data.CVV != 0 {
-			result = fmt.Sprintf("%s\nCVV: %s", result, data.CVV)
+			result = fmt.Sprintf("%s\nCVV: %d", result, data.CVV)
 		}
 		return result, nil
 

@@ -16,7 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// MockDBWrapper обертка для совместимости с sqlmock
+// MockDBWrapper обертка для совместимости с sqlmock.
 type MockDBWrapper struct {
 	db *sql.DB
 }
@@ -34,7 +34,6 @@ func (m *MockDBWrapper) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.
 }
 
 func TestUserRepository_Login(t *testing.T) {
-
 	type args struct {
 		login    string
 		password string
@@ -813,7 +812,6 @@ func TestNewUserRepository(t *testing.T) {
 	type args struct {
 		db          DBInterface
 		cfg         AppConfig
-		pswdManager PasswordManagerInterface
 	}
 
 	type testCase struct {

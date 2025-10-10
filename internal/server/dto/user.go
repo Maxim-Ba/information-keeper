@@ -1,5 +1,6 @@
 package dto
 
+// UserRepoDTO struct
 type UserRepoDTO struct {
 	ID             string
 	Login          string
@@ -7,6 +8,8 @@ type UserRepoDTO struct {
 	EmailConfirmed bool
 }
 
+
+// UserAuthReqDTO struct
 type UserAuthReqDTO struct {
 	Login    string
 	Password string

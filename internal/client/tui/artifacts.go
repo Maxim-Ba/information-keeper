@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Элемент списка для артефактов
+// Элемент списка для артефактов.
 type artifactItem struct {
 	artifact *proto.Artifact
 }
@@ -40,7 +40,7 @@ func (i artifactItem) FilterValue() string {
 	return i.artifact.MetaInfo
 }
 
-// Добавляем вспомогательную функцию для получения читаемого названия типа
+// Добавляем вспомогательную функцию для получения читаемого названия типа.
 func getArtifactTypeName(artifactType proto.ArtifactTypeEnum) string {
 	switch artifactType {
 	case proto.ArtifactTypeEnum_TEXT:
@@ -104,9 +104,9 @@ func (m artifactsModel) Update(msg tea.Msg) (artifactsModel, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
+		case ESC:
 			return m, func() tea.Msg { return navigateToMsg{state: mainMenuState} }
-		case "enter":
+		case ENTER:
 			if !m.loading && len(m.artifacts) > 0 {
 				selectedItem := m.list.SelectedItem()
 				if item, ok := selectedItem.(artifactItem); ok {
@@ -116,12 +116,11 @@ func (m artifactsModel) Update(msg tea.Msg) (artifactsModel, tea.Cmd) {
 						"link", item.artifact.Link,
 						"metaInfo", item.artifact.MetaInfo)
 					return m, func() tea.Msg {
-						return artifactSelectedMsg{artifact: item.artifact}
+						return artifactSelectedMsg(item)
 					}
 				}
 			}
 		}
-
 	}
 
 	m.list, cmd = m.list.Update(msg)

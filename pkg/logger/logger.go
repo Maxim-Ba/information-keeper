@@ -1,3 +1,4 @@
+// logger методы определения Logger
 package logger
 
 import (
@@ -9,18 +10,22 @@ import (
 	"time"
 )
 
-// LogLevel представляет уровни логирования
+// LogLevel представляет уровни логирования.
 type LogLevel slog.Level
 
 const (
+	// LevelDebug представляет уровни логирования.
 	LevelDebug LogLevel = LogLevel(slog.LevelDebug)
+	// LevelInfo  LogLevel = LogLevel(slog.LevelInfo)
 	LevelInfo  LogLevel = LogLevel(slog.LevelInfo)
+	// LevelWarn  LogLevel = LogLevel(slog.LevelWarn)
 	LevelWarn  LogLevel = LogLevel(slog.LevelWarn)
+	// LevelError LogLevel = LogLevel(slog.LevelError)
 	LevelError LogLevel = LogLevel(slog.LevelError)
 )
 
-// LoggerConfig конфигурация логгера
-type LoggerConfig struct {
+// Config конфигурация логгера.
+type Config struct {
 	FilePath    string
 	Level       LogLevel
 	UseJSON     bool
@@ -28,21 +33,21 @@ type LoggerConfig struct {
 	MaxFileSize int64 // в байтах
 }
 
-// FileLogger структура логгера с ротацией
+// FileLogger структура логгера с ротацией.
 type FileLogger struct {
 	handler slog.Handler
 	file    *os.File
 	mu      sync.Mutex
-	config  LoggerConfig
+	config  Config
 }
 
 var (
 	globalLogger *slog.Logger
 	fileLogger   *FileLogger
 )
-
-func DefaultConfig() LoggerConfig {
-	return LoggerConfig{
+// DefaultConfig возвращает конфигурацию логгера по умолчанию
+func DefaultConfig() Config {
+	return Config{
 		FilePath:    "",
 		Level:       LevelInfo,
 		UseJSON:     false,
@@ -50,8 +55,8 @@ func DefaultConfig() LoggerConfig {
 		MaxFileSize: 10 * 1024 * 1024, // 10MB
 	}
 }
-
-func InitLogger(config LoggerConfig) error {
+// InitLogger инициализирует глобальный логгер с заданной конфигурацией
+func InitLogger(config Config) error {
 	fl, err := NewFileLogger(config)
 	if err != nil {
 		return err
@@ -64,8 +69,8 @@ func InitLogger(config LoggerConfig) error {
 
 	return nil
 }
-
-func NewFileLogger(config LoggerConfig) (*FileLogger, error) {
+// NewFileLogger создает новый файловый логгер с поддержкой ротации
+func NewFileLogger(config Config) (*FileLogger, error) {
 	// Если FilePath не задан, используем stdout
 	if config.FilePath == "" {
 		opts := &slog.HandlerOptions{
@@ -88,11 +93,11 @@ func NewFileLogger(config LoggerConfig) (*FileLogger, error) {
 	}
 
 	// Создаем директорию для файла лога, если она не существует
-	if err := os.MkdirAll(filepath.Dir(config.FilePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(config.FilePath), 0750); err != nil {
 		return nil, err
 	}
 
-	file, err := os.OpenFile(config.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(config.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +120,7 @@ func NewFileLogger(config LoggerConfig) (*FileLogger, error) {
 		config:  config,
 	}, nil
 }
-
+// Close закрывает файловый логгер и освобождает ресурсы
 func (fl *FileLogger) Close() error {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
@@ -164,7 +169,7 @@ func (fl *FileLogger) rotate() error {
 		return err
 	}
 
-	file, err := os.OpenFile(fl.config.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(fl.config.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
@@ -183,7 +188,7 @@ func (fl *FileLogger) rotate() error {
 	fl.file = file
 	return nil
 }
-
+// Handle обрабатывает запись лога
 func (fl *FileLogger) Handle(ctx context.Context, r slog.Record) error {
 	if fl.shouldRotate() {
 		if err := fl.rotate(); err != nil {
@@ -193,7 +198,7 @@ func (fl *FileLogger) Handle(ctx context.Context, r slog.Record) error {
 
 	return fl.handler.Handle(ctx, r)
 }
-
+// WithAttrs создает новый логгер с дополнительными атрибутами
 func (fl *FileLogger) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &FileLogger{
 		handler: fl.handler.WithAttrs(attrs),
@@ -202,6 +207,7 @@ func (fl *FileLogger) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
+// WithGroup создает новый логгер с указанной группой
 func (fl *FileLogger) WithGroup(name string) slog.Handler {
 	return &FileLogger{
 		handler: fl.handler.WithGroup(name),
@@ -209,46 +215,49 @@ func (fl *FileLogger) WithGroup(name string) slog.Handler {
 		config:  fl.config,
 	}
 }
-
+// Enabled проверяет, включен ли указанный уровень логирования
 func (fl *FileLogger) Enabled(ctx context.Context, level slog.Level) bool {
 	return fl.handler.Enabled(ctx, level)
 }
-
+// GetLogger возвращает глобальный экземпляр логгера
 func GetLogger() *slog.Logger {
 	return globalLogger
 }
-
+// CloseLogger закрывает файловый логгер
 func CloseLogger() {
 	if fileLogger != nil {
 		fileLogger.Close()
 	}
 }
 
-// Helper functions для удобного использования
+// Debug записывает сообщение отладочного уровня
 func Debug(msg string, args ...interface{}) {
 	if globalLogger != nil {
 		globalLogger.Debug(msg, args...)
 	}
 }
 
+// Info записывает информационное сообщение
 func Info(msg string, args ...interface{}) {
 	if globalLogger != nil {
 		globalLogger.Info(msg, args...)
 	}
 }
-
+// Warn записывает предупреждающее сообщение
 func Warn(msg string, args ...interface{}) {
 	if globalLogger != nil {
 		globalLogger.Warn(msg, args...)
 	}
 }
 
+// Error записывает сообщение об ошибке
 func Error(msg string, args ...interface{}) {
 	if globalLogger != nil {
 		globalLogger.Error(msg, args...)
 	}
 }
 
+// ErrorContext записывает сообщение об ошибке с контекстом
 func ErrorContext(ctx context.Context, msg string, args ...interface{}) {
 	if globalLogger != nil {
 		globalLogger.ErrorContext(ctx, msg, args...)

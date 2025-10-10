@@ -1,3 +1,4 @@
+// eventidgen генерирует уникальный идентификатор события
 package eventidgen
 
 import (
@@ -5,6 +6,7 @@ import (
 	"time"
 )
 
+// GenerateEventID генерирует уникальный идентификатор события
 func GenerateEventID() string {
 	return fmt.Sprintf("evt_%d", time.Now().UnixNano())
 }

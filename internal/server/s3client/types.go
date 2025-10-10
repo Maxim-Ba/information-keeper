@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Config конфигурация клиента
+// Config конфигурация клиента.
 type Config struct {
 	Endpoint        string
 	AccessKeyID     string
@@ -16,7 +16,7 @@ type Config struct {
 	ForcePathStyle  bool
 }
 
-// UploadInput входные данные для загрузки
+// UploadInput входные данные для загрузки.
 type UploadInput struct {
 	Key         string
 	Body        io.Reader
@@ -25,7 +25,7 @@ type UploadInput struct {
 	Metadata    map[string]string
 }
 
-// UploadOutput выходные данные загрузки
+// UploadOutput выходные данные загрузки.
 type UploadOutput struct {
 	Key      string
 	Location string
@@ -33,12 +33,12 @@ type UploadOutput struct {
 	Size     int64
 }
 
-// DownloadInput входные данные для скачивания
+// DownloadInput входные данные для скачивания.
 type DownloadInput struct {
 	Key string
 }
 
-// DownloadOutput выходные данные скачивания
+// DownloadOutput выходные данные скачивания.
 type DownloadOutput struct {
 	Body        io.ReadCloser
 	ContentType string
@@ -46,25 +46,25 @@ type DownloadOutput struct {
 	ETag        string
 }
 
-// DeleteInput входные данные для удаления
+// DeleteInput входные данные для удаления.
 type DeleteInput struct {
 	Key string
 }
 
-// ListInput входные данные для списка
+// ListInput входные данные для списка.
 type ListInput struct {
 	Prefix    string
 	Delimiter string
 	MaxKeys   int32
 }
 
-// ListOutput выходные данные списка
+// ListOutput выходные данные списка.
 type ListOutput struct {
 	Objects  []ObjectInfo
 	Prefixes []string
 }
 
-// ObjectInfo информация об объекте
+// ObjectInfo информация об объекте.
 type ObjectInfo struct {
 	Key          string
 	Size         int64
@@ -72,30 +72,30 @@ type ObjectInfo struct {
 	ETag         string
 }
 
-// ExistsInput входные данные для проверки существования
+// ExistsInput входные данные для проверки существования.
 type ExistsInput struct {
 	Key string
 }
 
-// PresignedURLInput входные данные для предварительно подписанного URL
+// PresignedURLInput входные данные для предварительно подписанного URL.
 type PresignedURLInput struct {
 	Key     string
 	Expires time.Duration
 	Method  string // "GET", "PUT", "DELETE"
 }
 
-// CopyInput входные данные для копирования
+// CopyInput входные данные для копирования.
 type CopyInput struct {
 	SourceKey      string
 	DestinationKey string
 }
 
-// MetadataInput входные данные для метаданных
+// MetadataInput входные данные для метаданных.
 type MetadataInput struct {
 	Key string
 }
 
-// MetadataOutput выходные данные метаданных
+// MetadataOutput выходные данные метаданных.
 type MetadataOutput struct {
 	Metadata     map[string]string
 	Size         int64

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// S3Client интерфейс для работы с S3
+// S3Client интерфейс для работы с S3.
 type S3Client interface {
 	// Upload загрузка файла
 	Upload(ctx context.Context, input UploadInput) (*UploadOutput, error)

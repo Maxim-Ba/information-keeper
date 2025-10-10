@@ -11,12 +11,13 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-// Client реализация S3 клиента
+// Client реализация S3 клиента.
 type Client struct {
 	s3Client *s3.Client
 	config   Config
 }
 
+// New создает новый экземпляр S3 клиента с указанной конфигурацией.
 func New(cfg Config) (S3Client, error) {
 	var opts []func(*config.LoadOptions) error
 
@@ -59,6 +60,7 @@ func New(cfg Config) (S3Client, error) {
 	}, nil
 }
 
+// Upload загружает объект в S3 хранилище.
 func (c *Client) Upload(ctx context.Context, input UploadInput) (*UploadOutput, error) {
 	if input.Key == "" {
 		return nil, ErrInvalidInput
@@ -91,6 +93,7 @@ func (c *Client) Upload(ctx context.Context, input UploadInput) (*UploadOutput, 
 	}, nil
 }
 
+// Download скачивает объект из S3 хранилища.
 func (c *Client) Download(ctx context.Context, input DownloadInput) (*DownloadOutput, error) {
 	if input.Key == "" {
 		return nil, ErrInvalidInput
@@ -115,6 +118,7 @@ func (c *Client) Download(ctx context.Context, input DownloadInput) (*DownloadOu
 	}, nil
 }
 
+// Delete удаляет объект из S3 хранилища.
 func (c *Client) Delete(ctx context.Context, input DeleteInput) error {
 	if input.Key == "" {
 		return ErrInvalidInput
@@ -131,6 +135,7 @@ func (c *Client) Delete(ctx context.Context, input DeleteInput) error {
 	return nil
 }
 
+// List возвращает список объектов в S3 хранилище с указанным префиксом.
 func (c *Client) List(ctx context.Context, input ListInput) (*ListOutput, error) {
 	listInput := &s3.ListObjectsV2Input{
 		Bucket: aws.String(c.config.Bucket),
@@ -172,6 +177,7 @@ func (c *Client) List(ctx context.Context, input ListInput) (*ListOutput, error)
 	return output, nil
 }
 
+// Exists проверяет существование объекта в S3 хранилище.
 func (c *Client) Exists(ctx context.Context, input ExistsInput) (bool, error) {
 	if input.Key == "" {
 		return false, ErrInvalidInput
@@ -191,6 +197,7 @@ func (c *Client) Exists(ctx context.Context, input ExistsInput) (bool, error) {
 	return true, nil
 }
 
+// GetPresignedURL генерирует предварительно подписанный URL для доступа к объекту.
 func (c *Client) GetPresignedURL(ctx context.Context, input PresignedURLInput) (string, error) {
 	if input.Key == "" {
 		return "", ErrInvalidInput
@@ -229,6 +236,7 @@ func (c *Client) GetPresignedURL(ctx context.Context, input PresignedURLInput) (
 	}
 }
 
+// Copy копирует объект внутри S3 хранилища.
 func (c *Client) Copy(ctx context.Context, input CopyInput) error {
 	if input.SourceKey == "" || input.DestinationKey == "" {
 		return ErrInvalidInput
@@ -247,6 +255,7 @@ func (c *Client) Copy(ctx context.Context, input CopyInput) error {
 	return nil
 }
 
+// GetMetadata возвращает метаданные объекта из S3 хранилища.
 func (c *Client) GetMetadata(ctx context.Context, input MetadataInput) (*MetadataOutput, error) {
 	if input.Key == "" {
 		return nil, ErrInvalidInput
@@ -276,12 +285,14 @@ func (c *Client) GetMetadata(ctx context.Context, input MetadataInput) (*Metadat
 	}, nil
 }
 
+// Close закрывает соединение с S3 хранилищем.
+// AWS SDK не требует явного закрытия, метод добавлен для совместимости с интерфейсом.
 func (c *Client) Close() error {
 	// AWS SDK не требует явного закрытия
 	return nil
 }
 
-// isNotFoundError проверяет является ли ошибка ошибкой "не найдено"
+// isNotFoundError проверяет является ли ошибка ошибкой "не найдено".
 func isNotFoundError(err error) bool {
 	var apiErr smithy.APIError
 	if errors.As(err, &apiErr) {

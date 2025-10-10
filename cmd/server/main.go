@@ -85,5 +85,4 @@ func main() {
 	} else {
 		logger.Info("gRPC server stopped gracefully")
 	}
-
 }

@@ -11,12 +11,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// AuthInterceptor is a gRPC server interceptor that checks the validity of the access token in the context
 type TokenKeeper interface {
 	ValidateTokenWithBlacklist(ctx context.Context, token string) error
 	GetUserFromAcssToken(token string) (*dto.UserRepoDTO, error)
 	GetAccessTokenFromContext(ctx context.Context) (string, error)
 }
 
+// AuthInterceptor is a gRPC server interceptor that checks the validity of the access token in the context
 func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		logger.Info(fmt.Sprintf("AuthInterceptor info: %v", info.FullMethod))
@@ -30,7 +32,6 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 
 		token, err := tokenService.GetAccessTokenFromContext(ctx)
 		if err != nil {
-
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 
@@ -44,7 +45,5 @@ func AuthInterceptor(tokenService TokenKeeper) grpc.UnaryServerInterceptor {
 		ctx = context.WithValue(ctx, "userID", user.ID)
 
 		return handler(ctx, req)
-
 	}
-
 }

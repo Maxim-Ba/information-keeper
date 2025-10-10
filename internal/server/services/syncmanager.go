@@ -9,7 +9,7 @@ import (
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
-// SyncManager управляет real-time синхронизацией
+// SyncManager управляет real-time синхронизацией.
 type SyncManager struct {
 	mu              sync.RWMutex
 	subscribers     map[string]map[string]chan *proto.SyncEvent // userID -> clientID -> channel
@@ -18,7 +18,7 @@ type SyncManager struct {
 	retentionPeriod time.Duration
 }
 
-// Broadcast отправляет событие всем подписчикам пользователя
+// Broadcast отправляет событие всем подписчикам пользователя.
 func (s *SyncManager) Broadcast(userID string, event *proto.SyncEvent) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -39,7 +39,7 @@ func (s *SyncManager) Broadcast(userID string, event *proto.SyncEvent) {
 	}
 }
 
-// Subscribe добавляет нового подписчика
+// Subscribe добавляет нового подписчика.
 func (s *SyncManager) Subscribe(userID string, clientID string) chan *proto.SyncEvent {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -79,7 +79,7 @@ func (s *SyncManager) Subscribe(userID string, clientID string) chan *proto.Sync
 	return ch
 }
 
-// Unsubscribe удаляет подписчика
+// Unsubscribe удаляет подписчика.
 func (s *SyncManager) Unsubscribe(userID string, clientID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -120,7 +120,7 @@ func (s *SyncManager) Unsubscribe(userID string, clientID string) {
 	}
 }
 
-// GetEventsSince возвращает события с указанного времени
+// GetEventsSince возвращает события с указанного времени.
 func (s *SyncManager) GetEventsSince(userID string, since int64) []*proto.SyncEvent {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

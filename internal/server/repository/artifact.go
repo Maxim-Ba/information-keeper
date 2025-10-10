@@ -1,4 +1,3 @@
-// repository/artifact.go
 package repository
 
 import (
@@ -16,11 +15,12 @@ import (
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 )
 
+// ArtifactRepository provides methods for artifact data operations
 type ArtifactRepository struct {
 	s3client s3client.S3Client
 	db       *sql.DB
 }
-
+// NewArtifactRepository creates a new instance of ArtifactRepository
 func NewArtifactRepository(s3client s3client.S3Client, db *sql.DB) *ArtifactRepository {
 	return &ArtifactRepository{
 		s3client: s3client,
@@ -28,6 +28,7 @@ func NewArtifactRepository(s3client s3client.S3Client, db *sql.DB) *ArtifactRepo
 	}
 }
 
+// GetArtifacts retrieves paginated list of artifacts for a user
 func (r *ArtifactRepository) GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error) {
 	offset := (page - 1) * onpage
 
@@ -70,10 +71,12 @@ func (r *ArtifactRepository) GetArtifacts(ctx context.Context, userID string, pa
 		artifact.Type = artifactType
 		artifacts = append(artifacts, artifact)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during rows iteration: %w", err)
+	}
 	return artifacts, nil
 }
-
+// CreateArtifact creates a new artifact with optional payload upload to S3
 func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error) {
 	logger.Info("ArtifactRepository Creating artifact")
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -145,7 +148,7 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 
 	return &createdArtifact, nil
 }
-
+// UpdateArtifact updates an existing artifact and its S3 payload
 func (r *ArtifactRepository) UpdateArtifact(ctx context.Context, artifact *domain.Artifact) (*domain.Artifact, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -223,7 +226,7 @@ func (r *ArtifactRepository) UpdateArtifact(ctx context.Context, artifact *domai
 
 	return &updatedArtifact, nil
 }
-
+// DeleteArtifact deletes an artifact and its associated S3 file
 func (r *ArtifactRepository) DeleteArtifact(ctx context.Context, id string) (*domain.Artifact, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -259,6 +262,7 @@ func (r *ArtifactRepository) DeleteArtifact(ctx context.Context, id string) (*do
 	return artifact, nil
 }
 
+// GetArtifactByID retrieves an artifact by its ID
 func (r *ArtifactRepository) GetArtifactByID(ctx context.Context, id string) (*domain.Artifact, error) {
 	query := `
         SELECT a.id, a.owner_id, a.created_at, a.updated_at, a.expired_at, 
@@ -294,7 +298,7 @@ func (r *ArtifactRepository) GetArtifactByID(ctx context.Context, id string) (*d
 	return &artifact, nil
 }
 
-// Вспомогательные методы для работы с S3
+// Вспомогательные методы для работы с S3.
 func (r *ArtifactRepository) uploadPayloadToS3(ctx context.Context, artifact *domain.Artifact, payload []byte) error {
 	// Теперь используем существующий ID артефакта для формирования ключа
 	s3Key := fmt.Sprintf("users/%s/artifacts/%s/payload",
@@ -345,6 +349,7 @@ func (r *ArtifactRepository) deleteFileFromS3(ctx context.Context, s3Key string)
 	return nil
 }
 
+// GetPresignedURL generates a presigned URL for artifact download
 func (r *ArtifactRepository) GetPresignedURL(ctx context.Context, artifactID string) (string, error) {
 	artifact, err := r.GetArtifactByID(ctx, artifactID)
 	if err != nil {
@@ -369,6 +374,7 @@ func (r *ArtifactRepository) GetPresignedURL(ctx context.Context, artifactID str
 	return url, nil
 }
 
+// DownloadPayload downloads artifact payload directly from S3
 func (r *ArtifactRepository) DownloadPayload(ctx context.Context, artifactID string) ([]byte, error) {
 	artifact, err := r.GetArtifactByID(ctx, artifactID)
 	if err != nil {
@@ -394,6 +400,8 @@ func (r *ArtifactRepository) DownloadPayload(ctx context.Context, artifactID str
 
 	return payload, nil
 }
+
+// GetDownloadURL generates a download URL for an artifact
 func (r *ArtifactRepository) GetDownloadURL(ctx context.Context, artifactID string) (string, error) {
 	artifact, err := r.GetArtifactByID(ctx, artifactID)
 	if err != nil {

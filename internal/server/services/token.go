@@ -71,9 +71,9 @@ func (s *TokenService) IsInBlacklist(ctx context.Context, token string) (bool, e
 	return s.tokenRepository.IsInBlacklist(ctx, token)
 }
 
-// Add token to blacklist
+// Add token to blacklist.
 func (s *TokenService) InvalidateToken(ctx context.Context, token string) error {
-	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
+	logger.Info("TokenService InvalidateToken token:" + token)
 	// Парсим токен, чтобы получить время истечения
 	claims, err := s.validateToken(token, false)
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *TokenService) InvalidateToken(ctx context.Context, token string) error 
 	return nil
 }
 func (s *TokenService) InvalidateRefreshToken(ctx context.Context, token string) error {
-	logger.Info("TokenService InvalidateToken token:" + fmt.Sprintf("%v", token))
+	logger.Info("TokenService InvalidateToken token:" + token)
 	// Парсим токен, чтобы получить время истечения
 	claims, err := s.validateToken(token, true)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *TokenService) InvalidateRefreshToken(ctx context.Context, token string)
 	return nil
 }
 
-// ValidateTokenWithBlacklist checks if token is valid and not in blacklist
+// ValidateTokenWithBlacklist checks if token is valid and not in blacklist.
 func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context, token string) error {
 	// Сначала проверяем в черном списке
 	inBlacklist, err := s.IsInBlacklist(ctx, token)
@@ -118,7 +118,7 @@ func (s *TokenService) ValidateTokenWithBlacklist(ctx context.Context, token str
 	return s.ValidateToken(token)
 }
 
-// ValidateRefreshTokenWithBlacklist check refresh token and not in blacklist
+// ValidateRefreshTokenWithBlacklist check refresh token and not in blacklist.
 func (s *TokenService) ValidateRefreshTokenWithBlacklist(ctx context.Context, token string) error {
 	inBlacklist, err := s.IsInBlacklist(ctx, token)
 	if err != nil {

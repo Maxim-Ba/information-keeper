@@ -12,24 +12,29 @@ import (
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 )
 
+// AppConfig defines the interface for application configuration
 type AppConfig interface {
 	GetConfig() config.ServerCfg
 }
+// PasswordManagerInterface defines the interface for password management operations
 type PasswordManagerInterface interface {
 	CheckPassword(hashedPassword, password, secret string) error
 	HashPassword(password, secret string) (string, error)
 }
+// DBInterface defines the interface for database operations
 type DBInterface interface {
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
+
+// UserRepository provides methods for user data operations
 type UserRepository struct {
 	db          DBInterface
 	cfg         AppConfig
 	pswdManager PasswordManagerInterface
 }
-
+// Login authenticates a user by login and password
 func (u *UserRepository) Login(ctx context.Context, login string, password string) (*dto.UserRepoDTO, error) {
 	logger.Info("Login user", "login", login, "password", password)
 	query := `
@@ -59,6 +64,7 @@ func (u *UserRepository) Login(ctx context.Context, login string, password strin
 
 	return &user, nil
 }
+// ChangePassword changes user password after verifying the old password
 
 func (u *UserRepository) ChangePassword(ctx context.Context, login string, oldPassword string, newPassword string) error {
 	tx, err := u.db.BeginTx(ctx, nil)
@@ -105,7 +111,7 @@ func (u *UserRepository) ChangePassword(ctx context.Context, login string, oldPa
 
 	return nil
 }
-
+// GetUserByEmail retrieves a user by email address
 func (u *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dto.UserRepoDTO, error) {
 	query := `
 		SELECT id, login, email, email_confirmed
@@ -130,7 +136,7 @@ func (u *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dto
 
 	return &user, nil
 }
-
+// Register creates a new user account
 func (u *UserRepository) Register(ctx context.Context, login string, email string, password string) (*dto.UserRepoDTO, error) {
 	// Проверяем, существует ли пользователь с таким логином или email
 	checkQuery := `
@@ -171,7 +177,7 @@ func (u *UserRepository) Register(ctx context.Context, login string, email strin
 
 	return &user, nil
 }
-
+// Update updates user information
 func (u *UserRepository) Update(ctx context.Context, user *dto.UserRepoDTO) (*dto.UserRepoDTO, error) {
 	query := `
 		UPDATE users 
@@ -203,6 +209,7 @@ func (u *UserRepository) Update(ctx context.Context, user *dto.UserRepoDTO) (*dt
 	return &updatedUser, nil
 }
 
+// GetUserByID retrieves a user by ID
 func (u *UserRepository) GetUserByID(ctx context.Context, id string) (*dto.UserRepoDTO, error) {
 	query := `
 		SELECT id, login, email, email_confirmed
@@ -228,6 +235,7 @@ func (u *UserRepository) GetUserByID(ctx context.Context, id string) (*dto.UserR
 	return &user, nil
 }
 
+// NewUserRepository creates a new instance of UserRepository
 func NewUserRepository(db DBInterface, cfg AppConfig, pswdManager PasswordManagerInterface) *UserRepository {
 	return &UserRepository{
 		db:          db,

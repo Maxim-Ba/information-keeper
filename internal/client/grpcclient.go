@@ -19,6 +19,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// GRPCClient представляет клиент для взаимодействия с gRPC сервером.
+// Обеспечивает аутентификацию, управление токенами и операции с артефактами.
 type GRPCClient struct {
 	conn           *grpc.ClientConn
 	authClient     proto.AuthClient
@@ -28,6 +30,8 @@ type GRPCClient struct {
 	healthClient   grpc_health_v1.HealthClient
 }
 
+// NewGRPCClient создает новый экземпляр gRPC клиента для указанного адреса сервера.
+// Использует insecure credentials для подключения.
 func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
 	conn, err := grpc.NewClient(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -45,11 +49,15 @@ func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
 	}, nil
 }
 
+// Close закрывает соединение с gRPC сервером.
 func (c *GRPCClient) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
 }
+
+// HealthCheck выполняет проверку здоровья gRPC сервера.
+// Возвращает ошибку если сервер не доступен или не в состоянии SERVING.
 func (c *GRPCClient) HealthCheck(ctx context.Context) error {
 	resp, err := c.healthClient.Check(ctx, &grpc_health_v1.HealthCheckRequest{
 		Service: "",
@@ -65,6 +73,9 @@ func (c *GRPCClient) HealthCheck(ctx context.Context) error {
 
 	return nil
 }
+
+// Login выполняет аутентификацию пользователя и сохраняет полученные токены.
+// Запускает фоновую синхронизацию после успешного входа.
 func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.LoginUserResponse, error) {
 	req := &proto.LoginUserRequest{
 		User: &proto.UserAuthReqDTO{
@@ -78,7 +89,6 @@ func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.
 	if err != nil {
 		logger.Error(fmt.Sprintf("GRPCClient Login %v", err))
 		return resp, err
-
 	}
 	logger.Info(fmt.Sprintf("GRPCClient Login resp:%v", resp))
 	c.TokenManager.SetTokens(resp.AccessToken, resp.RefreshToken)
@@ -87,6 +97,7 @@ func (c *GRPCClient) Login(ctx context.Context, login, password string) (*proto.
 	return resp, err
 }
 
+// Register регистрирует нового пользователя в системе.
 func (c *GRPCClient) Register(ctx context.Context, login, password, email string) (*proto.RegistrationUserResponse, error) {
 	logger.Info(fmt.Sprintf("GRPCClient Register login:%s, password:%s, email:%s", login, password, email))
 	req := &proto.RegistrationUserRequest{
@@ -100,6 +111,7 @@ func (c *GRPCClient) Register(ctx context.Context, login, password, email string
 	return c.authClient.Register(ctx, req)
 }
 
+// RefreshToken обновляет access токен с использованием refresh токена.
 func (c *GRPCClient) RefreshToken(ctx context.Context) (*proto.LoginUserResponse, error) {
 	req := &proto.RefreshTokenRequest{
 		RefreshToken: c.TokenManager.GetRefreshToken(),
@@ -108,6 +120,7 @@ func (c *GRPCClient) RefreshToken(ctx context.Context) (*proto.LoginUserResponse
 	return c.authClient.RefreshToken(ctx, req)
 }
 
+// Logout выполняет выход пользователя из системы и очищает токены.
 func (c *GRPCClient) Logout(ctx context.Context) (*proto.LogoutResponse, error) {
 	var resp *proto.LogoutResponse
 	var err error
@@ -130,6 +143,8 @@ func (c *GRPCClient) Logout(ctx context.Context) (*proto.LogoutResponse, error) 
 
 	return resp, nil
 }
+
+// ChangePassword изменяет пароль текущего пользователя.
 func (c *GRPCClient) ChangePassword(ctx context.Context) (*proto.ChangePasswordResponse, error) {
 	req := &proto.ChangePasswordRequest{
 		AccessToken: c.TokenManager.GetAccessToken(),
@@ -138,6 +153,7 @@ func (c *GRPCClient) ChangePassword(ctx context.Context) (*proto.ChangePasswordR
 	return c.authClient.ChangePassword(ctx, req)
 }
 
+// RestorePassword инициирует процесс восстановления пароля по email.
 func (c *GRPCClient) RestorePassword(ctx context.Context, email string) (*proto.RestorePasswordResponse, error) {
 	req := &proto.RestorePasswordRequest{
 		Email: email,
@@ -146,6 +162,7 @@ func (c *GRPCClient) RestorePassword(ctx context.Context, email string) (*proto.
 	return c.authClient.RestorePassword(ctx, req)
 }
 
+// SendEmailConfirmation отправляет подтверждение email адреса.
 func (c *GRPCClient) SendEmailConfirmation(ctx context.Context, email string) (*proto.SendEmailConfirmationResponse, error) {
 	req := &proto.SendEmailConfirmationRequest{
 		Email: email,
@@ -154,7 +171,9 @@ func (c *GRPCClient) SendEmailConfirmation(ctx context.Context, email string) (*
 	return c.authClient.SendEmailConfirmation(ctx, req)
 }
 
-// Artifact methods
+// Artifact methods.
+
+// CreateArtifact создает новый артефакт.
 func (c *GRPCClient) CreateArtifact(ctx context.Context, req *proto.CreateArtifactRequest) (*proto.CreateArtifactResponse, error) {
 	var resp *proto.CreateArtifactResponse
 	var err error
@@ -172,6 +191,7 @@ func (c *GRPCClient) CreateArtifact(ctx context.Context, req *proto.CreateArtifa
 	return resp, nil
 }
 
+// GetArtifact получает артефакт по его идентификатору.
 func (c *GRPCClient) GetArtifact(ctx context.Context, artifactID string) (*proto.GetArtifactResponse, error) {
 	var resp *proto.GetArtifactResponse
 	var err error
@@ -191,6 +211,7 @@ func (c *GRPCClient) GetArtifact(ctx context.Context, artifactID string) (*proto
 	return resp, nil
 }
 
+// ListArtifacts возвращает список артефактов с пагинацией и фильтрацией по типу.
 func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, typeFilter *proto.ArtifactTypeEnum) (*proto.ListArtifactsResponse, error) {
 	var resp *proto.ListArtifactsResponse
 	var err error
@@ -220,6 +241,7 @@ func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, type
 	return resp, nil
 }
 
+// UpdateArtifact обновляет существующий артефакт.
 func (c *GRPCClient) UpdateArtifact(ctx context.Context, req *proto.UpdateArtifactRequest) (*proto.UpdateArtifactResponse, error) {
 	var resp *proto.UpdateArtifactResponse
 	var err error
@@ -237,6 +259,7 @@ func (c *GRPCClient) UpdateArtifact(ctx context.Context, req *proto.UpdateArtifa
 	return resp, nil
 }
 
+// DeleteArtifact удаляет артефакт по его идентификатору.
 func (c *GRPCClient) DeleteArtifact(ctx context.Context, artifactID string) (*proto.DeleteArtifactResponse, error) {
 	var resp *proto.DeleteArtifactResponse
 	var err error
@@ -254,6 +277,7 @@ func (c *GRPCClient) DeleteArtifact(ctx context.Context, artifactID string) (*pr
 	return resp, nil
 }
 
+// GetWithOTP получает артефакт с использованием одноразового пароля.
 func (c *GRPCClient) GetWithOTP(ctx context.Context, artifactID string) (*proto.GetWithOTPResponse, error) {
 	var resp *proto.GetWithOTPResponse
 	var err error
@@ -271,9 +295,9 @@ func (c *GRPCClient) GetWithOTP(ctx context.Context, artifactID string) (*proto.
 	}
 
 	return resp, nil
-
 }
 
+// Sync устанавливает потоковое соединение для синхронизации артефактов.
 func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int64) (proto.ArtifactService_SyncClient, error) {
 	accessToken := c.TokenManager.GetAccessToken()
 	ctx = c.withAuthToken(ctx, accessToken)
@@ -298,6 +322,9 @@ func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int
 
 	return stream, nil
 }
+
+// StartSync запускает фоновую синхронизацию артефактов с сервером.
+// Автоматически переподключается при обрыве соединения.
 func (c *GRPCClient) StartSync(ctx context.Context, clientID string, eventHandler func(*proto.SyncEvent) error) error {
 	var lastSyncTime int64
 	// Пытаемся получить время последней синхронизации
@@ -332,7 +359,7 @@ func (c *GRPCClient) StartSync(ctx context.Context, clientID string, eventHandle
 			}
 		}
 	}
-	//TODO усли произошел логин то выходим из цыкла
+	// TODO усли произошел логин то выходим из цыкла
 
 	// Бесконечный цикл переподключения
 	for {
@@ -367,13 +394,12 @@ func (c *GRPCClient) sendHeartbeats(ctx context.Context, stream proto.ArtifactSe
 	}
 }
 
-// обертка для работы с синхронизацией
+// SyncWithHandler устанавливает потоковое соединение для синхронизации с обработчиком событий.
 func (c *GRPCClient) SyncWithHandler(
 	ctx context.Context,
 	clientID string,
 	lastSyncTime int64,
 	eventHandler func(*proto.SyncEvent) error) error {
-
 	stream, err := c.Sync(ctx, clientID, lastSyncTime)
 	if err != nil {
 		return err
@@ -415,7 +441,9 @@ func (c *GRPCClient) SyncWithHandler(
 	}
 }
 
-// Helper method to add auth token to context
+// Helper method to add auth token to context.
+
+// withAuthToken добавляет токен аутентификации в контекст запроса.
 func (c *GRPCClient) withAuthToken(ctx context.Context, token string) context.Context {
 	if token == "" {
 		slog.Warn("Attempting to create context with empty token")
@@ -434,6 +462,7 @@ func (c *GRPCClient) withAuthToken(ctx context.Context, token string) context.Co
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
+// refreshTokens обновляет access и refresh токены.
 func (c *GRPCClient) refreshTokens(ctx context.Context) error {
 	refreshToken := c.TokenManager.GetRefreshToken()
 	if refreshToken == "" {
@@ -456,7 +485,7 @@ func (c *GRPCClient) refreshTokens(ctx context.Context) error {
 	return nil
 }
 
-// isTokenExpiredError проверяет, является ли ошибка ошибкой истечения токена
+// isTokenExpiredError проверяет, является ли ошибка ошибкой истечения токена.
 func (c *GRPCClient) isTokenExpiredError(err error) bool {
 	if err == nil {
 		return false
@@ -476,7 +505,7 @@ func (c *GRPCClient) isTokenExpiredError(err error) bool {
 				st.Message() == "access token expired"))
 }
 
-// executeWithTokenRetry выполняет операцию с автоматическим обновлением токена при необходимости
+// executeWithTokenRetry выполняет операцию с автоматическим обновлением токена при необходимости.
 func (c *GRPCClient) executeWithTokenRetry(ctx context.Context, operation func(context.Context) error) error {
 	var lastErr error
 
@@ -506,6 +535,8 @@ func (c *GRPCClient) executeWithTokenRetry(ctx context.Context, operation func(c
 	return lastErr
 }
 
+// SyncLoop запускает бесконечный цикл синхронизации в фоновом режиме.
+// Обрабатывает события создания, обновления и удаления артефактов.
 func (c *GRPCClient) SyncLoop(ctx context.Context) {
 	err := c.StartSync(ctx, "client-1", func(event *proto.SyncEvent) error {
 		switch e := event.EventType.(type) {
@@ -530,14 +561,16 @@ func (c *GRPCClient) SyncLoop(ctx context.Context) {
 	}
 }
 
-func (c *GRPCClient) DownloadContent(downloadURL string) ([]byte, error) {
+// DownloadContent загружает содержимое по указанному URL.
+// Используется для скачивания содержимого артефактов.
+func (c *GRPCClient) DownloadContent(ctx context.Context, downloadURL string) ([]byte, error) {
 	if downloadURL == "" {
 		return nil, fmt.Errorf("download URL is empty")
 	}
 
 	logger.Info("Downloading content from URL", "url", downloadURL)
 
-	req, err := http.NewRequest("GET", downloadURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", downloadURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
@@ -564,6 +597,9 @@ func (c *GRPCClient) DownloadContent(downloadURL string) ([]byte, error) {
 	logger.Info("Content downloaded successfully", "size", len(content))
 	return content, nil
 }
+
+// GetArtifactWithContent получает артефакт вместе с его содержимым.
+// Для BINARY типов возвращает пустое содержимое.
 func (c *GRPCClient) GetArtifactWithContent(ctx context.Context, artifactID string) (*proto.GetArtifactResponse, error) {
 	var resp *proto.GetArtifactResponse
 	var err error
@@ -583,10 +619,11 @@ func (c *GRPCClient) GetArtifactWithContent(ctx context.Context, artifactID stri
 	return resp, nil
 }
 
-func (c *GRPCClient) DownloadArtifactContent(artifactID string) ([]byte, error) {
+// DownloadArtifactContent скачивает содержимое артефакта по его идентификатору.
+// Для BINARY типов возвращает пустой массив байтов.
+func (c *GRPCClient) DownloadArtifactContent(ctx context.Context, artifactID string) ([]byte, error) {
 	logger.Info("GRPCClient DownloadArtifactContent artifactID: " + artifactID)
 
-	ctx := context.Background()
 
 	// Получаем артефакт чтобы получить ссылку
 	artifactResp, err := c.GetArtifact(ctx, artifactID)
@@ -603,14 +640,15 @@ func (c *GRPCClient) DownloadArtifactContent(artifactID string) ([]byte, error) 
 		return nil, errors.New("artifact has no content link")
 	}
 
-	content, err := c.DownloadContent(artifactResp.Artifact.Link)
+	content, err := c.DownloadContent(ctx, artifactResp.Artifact.Link)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download content: %w", err)
 	}
 
 	return content, nil
-
 }
+
+// GetArtifactDownloadURL получает URL для скачивания содержимого артефакта.
 func (c *GRPCClient) GetArtifactDownloadURL(ctx context.Context, artifactID string) (string, error) {
 	var resp *proto.GetArtifactDownloadURLResponse
 	var err error

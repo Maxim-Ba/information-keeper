@@ -12,7 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
+const SECRET = "test_secret"
+const TOKEN = "test_token"
 func TestTokenService_AddToBlacklist(t *testing.T) {
 	t.Run("successful add to blacklist", func(t *testing.T) {
 		mockTokenRepo := new(MockTokenRepository)
@@ -21,7 +22,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
 
-		token := "test_token"
+		token := TOKEN
 		expiry := time.Now().Add(time.Hour)
 
 		mockTokenRepo.On("AddToBlacklist", token, expiry).
@@ -44,7 +45,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 			// tokenRepository: nil - специально не устанавливаем
 		}
 
-		token := "test_token"
+		token := TOKEN
 		expiry := time.Now().Add(time.Hour)
 
 		err := tokenService.AddToBlacklist(context.Background(), token, expiry)
@@ -60,7 +61,7 @@ func TestTokenService_AddToBlacklist(t *testing.T) {
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
 
-		token := "test_token"
+		token := TOKEN
 		expiry := time.Now().Add(time.Hour)
 		expectedError := errors.New("database error")
 
@@ -124,7 +125,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 			// tokenRepository: nil - специально не устанавливаем
 		}
 
-		token := "test_token"
+		token := TOKEN
 
 		result, err := tokenService.IsInBlacklist(context.Background(), token)
 
@@ -140,7 +141,7 @@ func TestTokenService_IsInBlacklist(t *testing.T) {
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
 
-		token := "test_token"
+		token := TOKEN
 		expectedError := errors.New("connection failed")
 
 		mockTokenRepo.On("IsInBlacklist", token).
@@ -177,7 +178,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 		mockUserRepo := new(MockUserRepositoryInterface)
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -202,7 +203,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		validToken := createTestToken(secret, expiry)
 		expectedError := errors.New("blacklist storage error")
@@ -228,7 +229,7 @@ func TestTokenService_InvalidateToken(t *testing.T) {
 
 		tokenService := NewTokenService(mockConfig, mockUserRepo, mockTokenRepo)
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		validToken := createTestToken(secret, expiry)
 		expectedError := errors.New("blacklist storage error")
@@ -259,7 +260,7 @@ func setupTestTokenService() (*TokenService, *MockTokenRepository, *MockAppConfi
 	return tokenService, mockTokenRepo, mockConfig, mockUserRepo
 }
 
-// Table-driven tests
+// Table-driven tests.
 func TestTokenService_AddToBlacklist_TableDriven(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -351,9 +352,9 @@ func TestTokenService_IsInBlacklist_TableDriven(t *testing.T) {
 		},
 		{
 			name:  "repository error",
-			token: "test_token",
+			token: TOKEN,
 			setupMocks: func(repo *MockTokenRepository) {
-				repo.On("IsInBlacklist", "test_token").
+				repo.On("IsInBlacklist", TOKEN).
 					Return(false, errors.New("connection error"))
 			},
 			expectedResult: false,
@@ -391,7 +392,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 	t.Run("valid token not in blacklist", func(t *testing.T) {
 		tokenService, mockTokenRepo, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -410,7 +411,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 	t.Run("token in blacklist", func(t *testing.T) {
 		tokenService, mockTokenRepo, _, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -426,7 +427,7 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 	t.Run("blacklist check error", func(t *testing.T) {
 		tokenService, mockTokenRepo, _, _ := setupTestTokenService()
 
-		token := "test_token"
+		token := TOKEN
 		expectedError := errors.New("database error")
 
 		mockTokenRepo.On("IsInBlacklist", token).Return(false, expectedError)
@@ -443,9 +444,6 @@ func TestTokenService_ValidateTokenWithBlacklist(t *testing.T) {
 
 		invalidToken := "invalid.token.here"
 
-		// mockConfig.On("GetConfig").Return(config.ServerCfg{
-		// 	JWTSecret: "test_secret",
-		// })
 		mockTokenRepo.On("IsInBlacklist", invalidToken).Return(false, nil)
 
 		err := tokenService.ValidateTokenWithBlacklist(context.Background(), invalidToken)
@@ -461,7 +459,7 @@ func TestTokenService_ValidateRefreshTokenWithBlacklist(t *testing.T) {
 	t.Run("valid refresh token not in blacklist", func(t *testing.T) {
 		tokenService, mockTokenRepo, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8)
 		token := createTestToken(secret, expiry)
 
@@ -531,7 +529,7 @@ func TestTokenService_GenerateToken(t *testing.T) {
 			Email: "test@example.com",
 		}
 
-		secret := "test_secret"
+		secret := SECRET
 		// Ожидаем 4 вызова GetConfig: для генерации access, refresh и двух валидаций
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
 			JWTSecret: secret,
@@ -563,7 +561,7 @@ func TestTokenService_GenerateToken(t *testing.T) {
 			Email: "test@example.com",
 		}
 
-		secret := "test_secret"
+		secret := SECRET
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
 			JWTSecret: secret,
 		}).Times(3)
@@ -590,7 +588,7 @@ func TestTokenService_GenerateToken(t *testing.T) {
 			Email: "test@example.com",
 		}
 
-		secret := "test_secret"
+		secret := SECRET
 		mockConfig.On("GetConfig").Return(config.ServerCfg{
 			JWTSecret: secret,
 		}).Times(2) // Только для генерации
@@ -625,7 +623,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 	t.Run("successful token refresh", func(t *testing.T) {
 		tokenService, mockTokenRepo, mockConfig, mockUserRepo := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8) // 8 дней для refresh token
 		refreshToken := createTestToken(secret, expiry)
 
@@ -673,7 +671,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 	t.Run("blacklist check error", func(t *testing.T) {
 		tokenService, mockTokenRepo, _, _ := setupTestTokenService()
 
-		refreshToken := "test_token"
+		refreshToken := TOKEN
 		expectedError := errors.New("database error")
 
 		mockTokenRepo.On("IsInBlacklist", refreshToken).Return(false, expectedError)
@@ -707,7 +705,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 	t.Run("user not found", func(t *testing.T) {
 		tokenService, mockTokenRepo, mockConfig, mockUserRepo := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8)
 		refreshToken := createTestToken(secret, expiry)
 		expectedError := errors.New("user not found")
@@ -734,7 +732,7 @@ func TestTokenService_RefreshToken(t *testing.T) {
 	t.Run("failed to blacklist used token", func(t *testing.T) {
 		tokenService, mockTokenRepo, mockConfig, mockUserRepo := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8)
 		refreshToken := createTestToken(secret, expiry)
 
@@ -763,7 +761,7 @@ func TestTokenService_ValidateToken(t *testing.T) {
 	t.Run("valid access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour) // 1 час для access token
 		token := createTestToken(secret, expiry)
 
@@ -799,7 +797,7 @@ func TestTokenService_ValidateToken(t *testing.T) {
 	t.Run("expired token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(-time.Hour) // Токен истек час назад
 		token := createTestToken(secret, expiry)
 
@@ -819,9 +817,7 @@ func TestTokenService_ValidateToken(t *testing.T) {
 
 		malformedToken := "not.a.valid.jwt.token"
 
-		// mockConfig.On("GetConfig").Return(config.ServerCfg{
-		// 	JWTSecret: "test_secret",
-		// })
+
 
 		err := tokenService.ValidateToken(malformedToken)
 
@@ -833,7 +829,7 @@ func TestTokenService_ValidateToken(t *testing.T) {
 	t.Run("access token with refresh token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8) // 8 дней - как у refresh token
 		token := createTestToken(secret, expiry)
 
@@ -853,7 +849,7 @@ func TestTokenService_ValidateRefreshToken(t *testing.T) {
 	t.Run("valid refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8) // 8 дней для refresh token
 		token := createTestToken(secret, expiry)
 
@@ -870,7 +866,7 @@ func TestTokenService_ValidateRefreshToken(t *testing.T) {
 	t.Run("refresh token with access token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour) // 1 час - как у access token
 		token := createTestToken(secret, expiry)
 
@@ -888,7 +884,7 @@ func TestTokenService_ValidateRefreshToken(t *testing.T) {
 	t.Run("expired refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(-time.Hour) // Токен истек час назад
 		token := createTestToken(secret, expiry)
 
@@ -908,7 +904,7 @@ func TestTokenService_GetUserFromRefreshToken(t *testing.T) {
 	t.Run("successful user extraction from refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8)
 		token := createTestToken(secret, expiry)
 
@@ -943,7 +939,7 @@ func TestTokenService_GetUserFromRefreshToken(t *testing.T) {
 	t.Run("refresh token with access token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour) // 1 час - как у access token
 		token := createTestToken(secret, expiry)
 
@@ -965,7 +961,7 @@ func TestTokenService_GetUserFromAcssToken(t *testing.T) {
 	t.Run("successful user extraction from access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -1000,7 +996,7 @@ func TestTokenService_GetUserFromAcssToken(t *testing.T) {
 	t.Run("access token with refresh token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour * 24 * 8) // 8 дней - как у refresh token
 		token := createTestToken(secret, expiry)
 
@@ -1020,7 +1016,7 @@ func TestTokenService_GetUserFromAcssToken(t *testing.T) {
 	t.Run("expired access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(-time.Hour) // Токен истек час назад
 		token := createTestToken(secret, expiry)
 
@@ -1042,7 +1038,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("valid access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(15 * time.Minute) // 15 минут для access token
 		token := createTestToken(secret, expiry)
 
@@ -1063,7 +1059,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("valid refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(8 * 24 * time.Hour) // 8 дней для refresh token
 		token := createTestToken(secret, expiry)
 
@@ -1102,7 +1098,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("expired token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(-time.Hour) // Токен истек час назад
 		token := createTestToken(secret, expiry)
 
@@ -1145,7 +1141,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("access token with refresh token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(8 * 24 * time.Hour) // 8 дней - как у refresh token
 		token := createTestToken(secret, expiry)
 
@@ -1165,7 +1161,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("refresh token with access token expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(time.Hour) // 1 час - как у access token
 		token := createTestToken(secret, expiry)
 
@@ -1185,7 +1181,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("token with 23 hours expiration for access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(23 * time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -1203,7 +1199,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("token with 25 hours expiration for refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(25 * time.Hour)
 		token := createTestToken(secret, expiry)
 
@@ -1221,7 +1217,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("token with exactly 24 hours expiration for refresh token check", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(24 * time.Hour) // Ровно 24 часа
 		token := createTestToken(secret, expiry)
 
@@ -1241,7 +1237,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("token with 23 hours expiration for access token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(23 * time.Hour) // 23 часа - допустимо для access token
 		token := createTestToken(secret, expiry)
 
@@ -1259,7 +1255,7 @@ func TestTokenService_validateToken(t *testing.T) {
 	t.Run("token with 25 hours expiration for refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(25 * time.Hour) // 25 часов - допустимо для refresh token
 		token := createTestToken(secret, expiry)
 
@@ -1279,7 +1275,7 @@ func TestTokenService_validateToken_EdgeCases(t *testing.T) {
 	t.Run("token with negative expiration", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(-48 * time.Hour) // Истек 2 дня назад
 		token := createTestToken(secret, expiry)
 
@@ -1297,7 +1293,7 @@ func TestTokenService_validateToken_EdgeCases(t *testing.T) {
 	t.Run("token with very long expiration for refresh token", func(t *testing.T) {
 		tokenService, _, mockConfig, _ := setupTestTokenService()
 
-		secret := "test_secret"
+		secret := SECRET
 		expiry := time.Now().Add(365 * 24 * time.Hour) // 1 год
 		token := createTestToken(secret, expiry)
 
@@ -1319,7 +1315,7 @@ func TestTokenService_validateToken_EdgeCases(t *testing.T) {
 			tokenRepository: nil,
 		}
 
-		claims, err := tokenService.validateToken("test_token", false)
+		claims, err := tokenService.validateToken(TOKEN, false)
 
 		assert.Error(t, err)
 		assert.Nil(t, claims)

@@ -24,6 +24,7 @@ type ServerCfg struct {
 	MigrationsPath     string        `env:"MIGRATIONS_PATH" envDefault:"file://./migrations"`
 }
 
+// NewConfig создает новый экземпляр ServerCfg и возвращает его.
 func NewConfig() (*ServerCfg, error) {
 	cfg := &ServerCfg{}
 	if err := env.Parse(cfg); err != nil {
@@ -32,6 +33,7 @@ func NewConfig() (*ServerCfg, error) {
 	return cfg, nil
 }
 
+// GetConfig возвращает конфигурацию сервера.
 func (c *ServerCfg) GetConfig() ServerCfg {
 	return *c
 }

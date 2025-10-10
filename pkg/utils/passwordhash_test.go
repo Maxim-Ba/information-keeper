@@ -253,7 +253,7 @@ func TestHashPassword_DeterministicPeppering(t *testing.T) {
 	}
 }
 
-// Helper function to generate pepper for testing
+// Helper function to generate pepper for testing.
 func generatePepper(password, secret string) string {
 	pepperedPassword := hmac.New(sha256.New, []byte(secret))
 	pepperedPassword.Write([]byte(password))

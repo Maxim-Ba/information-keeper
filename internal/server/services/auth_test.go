@@ -151,7 +151,7 @@ func TestAuthService_Login(t *testing.T) {
 	})
 }
 
-// Help function for testing
+// Help function for testing.
 func setupTestAuthService() (*AuthService, *MockUserRepository, *MockTokenService, *MockAppConfig) {
 	mockUserRepo := new(MockUserRepository)
 	mockTokenService := new(MockTokenService)
@@ -189,7 +189,6 @@ func TestAuthService_Login_TableDriven(t *testing.T) {
 			password: "password",
 			setupMocks: func(repo *MockUserRepository, token *MockTokenService, cfg *MockAppConfig) {
 				cfg.On("GetConfig").Return(config.ServerCfg{PasswordSecret: "secret"})
-
 			},
 			expectedError: true,
 			errorContains: "login cannot be empty",
@@ -742,7 +741,6 @@ func TestAuthService_Register_TableDriven(t *testing.T) {
 					Return(&JWTToken{AcssToken: "access", RefreshToken: "refresh"}, nil)
 				repo.On("GetUserByEmail", "test@example.com").
 					Return((*dto.UserRepoDTO)(nil), errors.New("email service down"))
-
 			},
 			expectedError: false,
 		},

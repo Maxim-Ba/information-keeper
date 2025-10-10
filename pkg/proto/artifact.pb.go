@@ -1467,6 +1467,102 @@ func (x *ClientDisconnectedEvent) GetDisconnectTime() int64 {
 	return 0
 }
 
+type GetArtifactDownloadURLRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ArtifactId    string                 `protobuf:"bytes,1,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetArtifactDownloadURLRequest) Reset() {
+	*x = GetArtifactDownloadURLRequest{}
+	mi := &file_artifact_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetArtifactDownloadURLRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetArtifactDownloadURLRequest) ProtoMessage() {}
+
+func (x *GetArtifactDownloadURLRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetArtifactDownloadURLRequest.ProtoReflect.Descriptor instead.
+func (*GetArtifactDownloadURLRequest) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetArtifactDownloadURLRequest) GetArtifactId() string {
+	if x != nil {
+		return x.ArtifactId
+	}
+	return ""
+}
+
+type GetArtifactDownloadURLResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DownloadUrl   string                 `protobuf:"bytes,1,opt,name=download_url,json=downloadUrl,proto3" json:"download_url,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetArtifactDownloadURLResponse) Reset() {
+	*x = GetArtifactDownloadURLResponse{}
+	mi := &file_artifact_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetArtifactDownloadURLResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetArtifactDownloadURLResponse) ProtoMessage() {}
+
+func (x *GetArtifactDownloadURLResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_artifact_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetArtifactDownloadURLResponse.ProtoReflect.Descriptor instead.
+func (*GetArtifactDownloadURLResponse) Descriptor() ([]byte, []int) {
+	return file_artifact_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetArtifactDownloadURLResponse) GetDownloadUrl() string {
+	if x != nil {
+		return x.DownloadUrl
+	}
+	return ""
+}
+
+func (x *GetArtifactDownloadURLResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_artifact_proto protoreflect.FileDescriptor
 
 const file_artifact_proto_rawDesc = "" +
@@ -1573,13 +1669,19 @@ const file_artifact_proto_rawDesc = "" +
 	"\fconnect_time\x18\x03 \x01(\x03R\vconnectTime\"_\n" +
 	"\x17ClientDisconnectedEvent\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12'\n" +
-	"\x0fdisconnect_time\x18\x02 \x01(\x03R\x0edisconnectTime*K\n" +
+	"\x0fdisconnect_time\x18\x02 \x01(\x03R\x0edisconnectTime\"@\n" +
+	"\x1dGetArtifactDownloadURLRequest\x12\x1f\n" +
+	"\vartifact_id\x18\x01 \x01(\tR\n" +
+	"artifactId\"Y\n" +
+	"\x1eGetArtifactDownloadURLResponse\x12!\n" +
+	"\fdownload_url\x18\x01 \x01(\tR\vdownloadUrl\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error*K\n" +
 	"\x10ArtifactTypeEnum\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\x12\n" +
 	"\x0eLOGIN_PASSWORD\x10\x01\x12\r\n" +
 	"\tBANK_CARD\x10\x02\x12\n" +
 	"\n" +
-	"\x06BINARY\x10\x032\xaf\x04\n" +
+	"\x06BINARY\x10\x032\x9c\x05\n" +
 	"\x0fArtifactService\x12S\n" +
 	"\x0eCreateArtifact\x12\x1f.artifact.CreateArtifactRequest\x1a .artifact.CreateArtifactResponse\x12J\n" +
 	"\vGetArtifact\x12\x1c.artifact.GetArtifactRequest\x1a\x1d.artifact.GetArtifactResponse\x12P\n" +
@@ -1588,7 +1690,8 @@ const file_artifact_proto_rawDesc = "" +
 	"\x0eDeleteArtifact\x12\x1f.artifact.DeleteArtifactRequest\x1a .artifact.DeleteArtifactResponse\x12G\n" +
 	"\n" +
 	"GetWithOTP\x12\x1b.artifact.GetWithOTPRequest\x1a\x1c.artifact.GetWithOTPResponse\x126\n" +
-	"\x04Sync\x12\x15.artifact.SyncRequest\x1a\x13.artifact.SyncEvent(\x010\x01B.Z,github.com/Maxim-Ba/information-keeper/protob\x06proto3"
+	"\x04Sync\x12\x15.artifact.SyncRequest\x1a\x13.artifact.SyncEvent(\x010\x01\x12k\n" +
+	"\x16GetArtifactDownloadURL\x12'.artifact.GetArtifactDownloadURLRequest\x1a(.artifact.GetArtifactDownloadURLResponseB.Z,github.com/Maxim-Ba/information-keeper/protob\x06proto3"
 
 var (
 	file_artifact_proto_rawDescOnce sync.Once
@@ -1603,32 +1706,34 @@ func file_artifact_proto_rawDescGZIP() []byte {
 }
 
 var file_artifact_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_artifact_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_artifact_proto_goTypes = []any{
-	(ArtifactTypeEnum)(0),           // 0: artifact.ArtifactTypeEnum
-	(*Artifact)(nil),                // 1: artifact.Artifact
-	(*CreateArtifactRequest)(nil),   // 2: artifact.CreateArtifactRequest
-	(*CreateArtifactResponse)(nil),  // 3: artifact.CreateArtifactResponse
-	(*GetArtifactRequest)(nil),      // 4: artifact.GetArtifactRequest
-	(*GetArtifactResponse)(nil),     // 5: artifact.GetArtifactResponse
-	(*ListArtifactsRequest)(nil),    // 6: artifact.ListArtifactsRequest
-	(*ListArtifactsResponse)(nil),   // 7: artifact.ListArtifactsResponse
-	(*UpdateArtifactRequest)(nil),   // 8: artifact.UpdateArtifactRequest
-	(*UpdateArtifactResponse)(nil),  // 9: artifact.UpdateArtifactResponse
-	(*DeleteArtifactRequest)(nil),   // 10: artifact.DeleteArtifactRequest
-	(*DeleteArtifactResponse)(nil),  // 11: artifact.DeleteArtifactResponse
-	(*GetWithOTPRequest)(nil),       // 12: artifact.GetWithOTPRequest
-	(*GetWithOTPResponse)(nil),      // 13: artifact.GetWithOTPResponse
-	(*SyncRequest)(nil),             // 14: artifact.SyncRequest
-	(*SyncEvent)(nil),               // 15: artifact.SyncEvent
-	(*ArtifactCreatedEvent)(nil),    // 16: artifact.ArtifactCreatedEvent
-	(*ArtifactUpdatedEvent)(nil),    // 17: artifact.ArtifactUpdatedEvent
-	(*ArtifactDeletedEvent)(nil),    // 18: artifact.ArtifactDeletedEvent
-	(*SyncCompleteEvent)(nil),       // 19: artifact.SyncCompleteEvent
-	(*ClientHello)(nil),             // 20: artifact.ClientHello
-	(*ClientAck)(nil),               // 21: artifact.ClientAck
-	(*ClientConnectedEvent)(nil),    // 22: artifact.ClientConnectedEvent
-	(*ClientDisconnectedEvent)(nil), // 23: artifact.ClientDisconnectedEvent
+	(ArtifactTypeEnum)(0),                  // 0: artifact.ArtifactTypeEnum
+	(*Artifact)(nil),                       // 1: artifact.Artifact
+	(*CreateArtifactRequest)(nil),          // 2: artifact.CreateArtifactRequest
+	(*CreateArtifactResponse)(nil),         // 3: artifact.CreateArtifactResponse
+	(*GetArtifactRequest)(nil),             // 4: artifact.GetArtifactRequest
+	(*GetArtifactResponse)(nil),            // 5: artifact.GetArtifactResponse
+	(*ListArtifactsRequest)(nil),           // 6: artifact.ListArtifactsRequest
+	(*ListArtifactsResponse)(nil),          // 7: artifact.ListArtifactsResponse
+	(*UpdateArtifactRequest)(nil),          // 8: artifact.UpdateArtifactRequest
+	(*UpdateArtifactResponse)(nil),         // 9: artifact.UpdateArtifactResponse
+	(*DeleteArtifactRequest)(nil),          // 10: artifact.DeleteArtifactRequest
+	(*DeleteArtifactResponse)(nil),         // 11: artifact.DeleteArtifactResponse
+	(*GetWithOTPRequest)(nil),              // 12: artifact.GetWithOTPRequest
+	(*GetWithOTPResponse)(nil),             // 13: artifact.GetWithOTPResponse
+	(*SyncRequest)(nil),                    // 14: artifact.SyncRequest
+	(*SyncEvent)(nil),                      // 15: artifact.SyncEvent
+	(*ArtifactCreatedEvent)(nil),           // 16: artifact.ArtifactCreatedEvent
+	(*ArtifactUpdatedEvent)(nil),           // 17: artifact.ArtifactUpdatedEvent
+	(*ArtifactDeletedEvent)(nil),           // 18: artifact.ArtifactDeletedEvent
+	(*SyncCompleteEvent)(nil),              // 19: artifact.SyncCompleteEvent
+	(*ClientHello)(nil),                    // 20: artifact.ClientHello
+	(*ClientAck)(nil),                      // 21: artifact.ClientAck
+	(*ClientConnectedEvent)(nil),           // 22: artifact.ClientConnectedEvent
+	(*ClientDisconnectedEvent)(nil),        // 23: artifact.ClientDisconnectedEvent
+	(*GetArtifactDownloadURLRequest)(nil),  // 24: artifact.GetArtifactDownloadURLRequest
+	(*GetArtifactDownloadURLResponse)(nil), // 25: artifact.GetArtifactDownloadURLResponse
 }
 var file_artifact_proto_depIdxs = []int32{
 	0,  // 0: artifact.Artifact.type:type_name -> artifact.ArtifactTypeEnum
@@ -1655,15 +1760,17 @@ var file_artifact_proto_depIdxs = []int32{
 	10, // 21: artifact.ArtifactService.DeleteArtifact:input_type -> artifact.DeleteArtifactRequest
 	12, // 22: artifact.ArtifactService.GetWithOTP:input_type -> artifact.GetWithOTPRequest
 	14, // 23: artifact.ArtifactService.Sync:input_type -> artifact.SyncRequest
-	3,  // 24: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
-	5,  // 25: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
-	7,  // 26: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
-	9,  // 27: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
-	11, // 28: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
-	13, // 29: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
-	15, // 30: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
-	24, // [24:31] is the sub-list for method output_type
-	17, // [17:24] is the sub-list for method input_type
+	24, // 24: artifact.ArtifactService.GetArtifactDownloadURL:input_type -> artifact.GetArtifactDownloadURLRequest
+	3,  // 25: artifact.ArtifactService.CreateArtifact:output_type -> artifact.CreateArtifactResponse
+	5,  // 26: artifact.ArtifactService.GetArtifact:output_type -> artifact.GetArtifactResponse
+	7,  // 27: artifact.ArtifactService.ListArtifacts:output_type -> artifact.ListArtifactsResponse
+	9,  // 28: artifact.ArtifactService.UpdateArtifact:output_type -> artifact.UpdateArtifactResponse
+	11, // 29: artifact.ArtifactService.DeleteArtifact:output_type -> artifact.DeleteArtifactResponse
+	13, // 30: artifact.ArtifactService.GetWithOTP:output_type -> artifact.GetWithOTPResponse
+	15, // 31: artifact.ArtifactService.Sync:output_type -> artifact.SyncEvent
+	25, // 32: artifact.ArtifactService.GetArtifactDownloadURL:output_type -> artifact.GetArtifactDownloadURLResponse
+	25, // [25:33] is the sub-list for method output_type
+	17, // [17:25] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
 	17, // [17:17] is the sub-list for extension extendee
 	0,  // [0:17] is the sub-list for field type_name
@@ -1689,7 +1796,7 @@ func file_artifact_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_artifact_proto_rawDesc), len(file_artifact_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   23,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

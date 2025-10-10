@@ -153,6 +153,15 @@ message ClientDisconnectedEvent {
   string client_id = 1;
   int64 disconnect_time = 2;
 }
+
+message GetArtifactDownloadURLRequest {
+    string artifact_id = 1;
+}
+
+message GetArtifactDownloadURLResponse {
+    string download_url = 1;
+    string error = 2;
+}
 // ----- Service -----
 
 service ArtifactService {
@@ -163,4 +172,5 @@ service ArtifactService {
   rpc DeleteArtifact(DeleteArtifactRequest) returns (DeleteArtifactResponse);
   rpc GetWithOTP(GetWithOTPRequest) returns (GetWithOTPResponse);
   rpc Sync(stream SyncRequest) returns (stream SyncEvent);
+  rpc GetArtifactDownloadURL(GetArtifactDownloadURLRequest) returns (GetArtifactDownloadURLResponse);
 }

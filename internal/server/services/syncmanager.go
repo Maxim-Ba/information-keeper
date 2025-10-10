@@ -25,7 +25,7 @@ func (s *SyncManager) Broadcast(userID string, event *proto.SyncEvent) {
 
 	// Сохраняем в историю
 	s.addToHistory(userID, event)
-
+	logger.Info("Broadcasting event to %d subscribers for user %s\n", len(s.subscribers[userID]), userID)
 	// Отправляем всем активным подписчикам
 	if clients, ok := s.subscribers[userID]; ok {
 		for clientID, ch := range clients {

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
@@ -194,22 +196,22 @@ func (c *GRPCClient) ListArtifacts(ctx context.Context, page, onPage int32, type
 	var err error
 
 	operation := func(ctx context.Context) error {
-        ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
-        
-        // Создаем запрос с опциональным typeFilter
-        req := &proto.ListArtifactsRequest{
-            Page:   page,
-            OnPage: onPage,
-        }
-        
-        // Добавляем typeFilter только если он указан
-        if typeFilter != nil {
-            req.TypeFilter = typeFilter
-        }
-        
-        resp, err = c.artifactClient.ListArtifacts(ctxWithToken, req)
-        return err
-    }
+		ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+
+		// Создаем запрос с опциональным typeFilter
+		req := &proto.ListArtifactsRequest{
+			Page:   page,
+			OnPage: onPage,
+		}
+
+		// Добавляем typeFilter только если он указан
+		if typeFilter != nil {
+			req.TypeFilter = typeFilter
+		}
+
+		resp, err = c.artifactClient.ListArtifacts(ctxWithToken, req)
+		return err
+	}
 
 	if err := c.executeWithTokenRetry(ctx, operation); err != nil {
 		return nil, err
@@ -298,7 +300,7 @@ func (c *GRPCClient) Sync(ctx context.Context, clientID string, lastSyncTime int
 }
 func (c *GRPCClient) StartSync(ctx context.Context, clientID string, eventHandler func(*proto.SyncEvent) error) error {
 	var lastSyncTime int64
-	// Пытаемся получить время последней синхронизации 
+	// Пытаемся получить время последней синхронизации
 	// lastSyncTime = c.getLastSyncTime(clientID)
 
 	operation := func(ctx context.Context) error {
@@ -330,7 +332,7 @@ func (c *GRPCClient) StartSync(ctx context.Context, clientID string, eventHandle
 			}
 		}
 	}
-//TODO усли произошел логин то выходим из цыкла
+	//TODO усли произошел логин то выходим из цыкла
 
 	// Бесконечный цикл переподключения
 	for {
@@ -508,22 +510,122 @@ func (c *GRPCClient) SyncLoop(ctx context.Context) {
 	err := c.StartSync(ctx, "client-1", func(event *proto.SyncEvent) error {
 		switch e := event.EventType.(type) {
 		case *proto.SyncEvent_ArtifactCreated:
-			fmt.Printf("New artifact created: %s\n", e.ArtifactCreated.Artifact.Id)
-			// Обновить UI
+			logger.Info("New artifact created: %s\n", e.ArtifactCreated.Artifact.Id)
+			// TODO Обновить UI
 		case *proto.SyncEvent_ArtifactUpdated:
-			fmt.Printf("Artifact updated: %s\n", e.ArtifactUpdated.Artifact.Id)
-			// Обновить UI
+			logger.Info("Artifact updated: %s\n", e.ArtifactUpdated.Artifact.Id)
+			// TODO Обновить UI
 		case *proto.SyncEvent_ArtifactDeleted:
-			fmt.Printf("Artifact deleted: %s\n", e.ArtifactDeleted.ArtifactId)
-			// Обновить UI
+			logger.Info("Artifact deleted: %s\n", e.ArtifactDeleted.ArtifactId)
+			// TODO Обновить UI
 		case *proto.SyncEvent_ClientConnected:
-			fmt.Printf("Other client connected: %s\n", e.ClientConnected.ClientId)
+			logger.Info("Other client connected: %s\n", e.ClientConnected.ClientId)
 		case *proto.SyncEvent_ClientDisconnected:
-			fmt.Printf("Other client disconnected: %s\n", e.ClientDisconnected.ClientId)
+			logger.Info("Other client disconnected: %s\n", e.ClientDisconnected.ClientId)
 		}
 		return nil
 	})
 	if err != nil {
 		slog.Error("Sync failed", "error", err)
 	}
+}
+
+func (c *GRPCClient) DownloadContent(downloadURL string) ([]byte, error) {
+    if downloadURL == "" {
+        return nil, fmt.Errorf("download URL is empty")
+    }
+
+    logger.Info("Downloading content from URL", "url", downloadURL)
+
+    req, err := http.NewRequest("GET", downloadURL, nil)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create request: %v", err)
+    }
+
+    client := &http.Client{
+        Timeout: 30 * time.Second,
+    }
+
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("failed to download from URL: %v", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("download failed with status: %s", resp.Status)
+    }
+
+    content, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read response body: %v", err)
+    }
+
+    logger.Info("Content downloaded successfully", "size", len(content))
+    return content, nil
+}
+func (c *GRPCClient) GetArtifactWithContent(ctx context.Context, artifactID string) (*proto.GetArtifactResponse, error) {
+    var resp *proto.GetArtifactResponse
+    var err error
+
+    operation := func(ctx context.Context) error {
+        ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+        resp, err = c.artifactClient.GetArtifact(ctxWithToken, &proto.GetArtifactRequest{
+            ArtifactId: artifactID,
+        })
+        return err
+    }
+
+    if err := c.executeWithTokenRetry(ctx, operation); err != nil {
+        return nil, err
+    }
+
+    return resp, nil
+}
+
+func (c *GRPCClient) DownloadArtifactContent(artifactID string) ([]byte, error) {
+        logger.Info("GRPCClient DownloadArtifactContent artifactID: " + artifactID)
+
+    ctx := context.Background()
+
+    // Получаем артефакт чтобы получить ссылку
+    artifactResp, err := c.GetArtifact(ctx, artifactID)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get artifact: %w", err)
+    }
+
+    // Для BINARY типа не скачиваем содержимое, только возвращаем пустой массив
+    if artifactResp.Artifact.Type == proto.ArtifactTypeEnum_BINARY {
+        return []byte{}, nil
+    }
+
+    if artifactResp.Artifact.Link == "" {
+        return nil, errors.New("artifact has no content link")
+    }
+
+    content, err := c.DownloadContent(artifactResp.Artifact.Link)
+    if err != nil {
+        return nil, fmt.Errorf("failed to download content: %w", err)
+    }
+
+    return content, nil
+
+}
+func (c *GRPCClient) GetArtifactDownloadURL(ctx context.Context, artifactID string) (string, error) {
+	var resp *proto.GetArtifactDownloadURLResponse
+	var err error
+
+	operation := func(ctx context.Context) error {
+		ctxWithToken := c.withAuthToken(ctx, c.TokenManager.GetAccessToken())
+		resp, err = c.artifactClient.GetArtifactDownloadURL(ctxWithToken, &proto.GetArtifactDownloadURLRequest{
+			ArtifactId: artifactID,
+		})
+		return err
+	}
+
+	if err := c.executeWithTokenRetry(ctx, operation); err != nil {
+		return "", fmt.Errorf("failed to get download URL: %v", err)
+	}
+
+	return resp.DownloadUrl, nil
 }

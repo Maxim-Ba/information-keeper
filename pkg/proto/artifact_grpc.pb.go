@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ArtifactService_CreateArtifact_FullMethodName = "/artifact.ArtifactService/CreateArtifact"
-	ArtifactService_GetArtifact_FullMethodName    = "/artifact.ArtifactService/GetArtifact"
-	ArtifactService_ListArtifacts_FullMethodName  = "/artifact.ArtifactService/ListArtifacts"
-	ArtifactService_UpdateArtifact_FullMethodName = "/artifact.ArtifactService/UpdateArtifact"
-	ArtifactService_DeleteArtifact_FullMethodName = "/artifact.ArtifactService/DeleteArtifact"
-	ArtifactService_GetWithOTP_FullMethodName     = "/artifact.ArtifactService/GetWithOTP"
-	ArtifactService_Sync_FullMethodName           = "/artifact.ArtifactService/Sync"
+	ArtifactService_CreateArtifact_FullMethodName         = "/artifact.ArtifactService/CreateArtifact"
+	ArtifactService_GetArtifact_FullMethodName            = "/artifact.ArtifactService/GetArtifact"
+	ArtifactService_ListArtifacts_FullMethodName          = "/artifact.ArtifactService/ListArtifacts"
+	ArtifactService_UpdateArtifact_FullMethodName         = "/artifact.ArtifactService/UpdateArtifact"
+	ArtifactService_DeleteArtifact_FullMethodName         = "/artifact.ArtifactService/DeleteArtifact"
+	ArtifactService_GetWithOTP_FullMethodName             = "/artifact.ArtifactService/GetWithOTP"
+	ArtifactService_Sync_FullMethodName                   = "/artifact.ArtifactService/Sync"
+	ArtifactService_GetArtifactDownloadURL_FullMethodName = "/artifact.ArtifactService/GetArtifactDownloadURL"
 )
 
 // ArtifactServiceClient is the client API for ArtifactService service.
@@ -39,6 +40,7 @@ type ArtifactServiceClient interface {
 	DeleteArtifact(ctx context.Context, in *DeleteArtifactRequest, opts ...grpc.CallOption) (*DeleteArtifactResponse, error)
 	GetWithOTP(ctx context.Context, in *GetWithOTPRequest, opts ...grpc.CallOption) (*GetWithOTPResponse, error)
 	Sync(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SyncRequest, SyncEvent], error)
+	GetArtifactDownloadURL(ctx context.Context, in *GetArtifactDownloadURLRequest, opts ...grpc.CallOption) (*GetArtifactDownloadURLResponse, error)
 }
 
 type artifactServiceClient struct {
@@ -122,6 +124,16 @@ func (c *artifactServiceClient) Sync(ctx context.Context, opts ...grpc.CallOptio
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ArtifactService_SyncClient = grpc.BidiStreamingClient[SyncRequest, SyncEvent]
 
+func (c *artifactServiceClient) GetArtifactDownloadURL(ctx context.Context, in *GetArtifactDownloadURLRequest, opts ...grpc.CallOption) (*GetArtifactDownloadURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetArtifactDownloadURLResponse)
+	err := c.cc.Invoke(ctx, ArtifactService_GetArtifactDownloadURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ArtifactServiceServer is the server API for ArtifactService service.
 // All implementations must embed UnimplementedArtifactServiceServer
 // for forward compatibility.
@@ -133,6 +145,7 @@ type ArtifactServiceServer interface {
 	DeleteArtifact(context.Context, *DeleteArtifactRequest) (*DeleteArtifactResponse, error)
 	GetWithOTP(context.Context, *GetWithOTPRequest) (*GetWithOTPResponse, error)
 	Sync(grpc.BidiStreamingServer[SyncRequest, SyncEvent]) error
+	GetArtifactDownloadURL(context.Context, *GetArtifactDownloadURLRequest) (*GetArtifactDownloadURLResponse, error)
 	mustEmbedUnimplementedArtifactServiceServer()
 }
 
@@ -163,6 +176,9 @@ func (UnimplementedArtifactServiceServer) GetWithOTP(context.Context, *GetWithOT
 }
 func (UnimplementedArtifactServiceServer) Sync(grpc.BidiStreamingServer[SyncRequest, SyncEvent]) error {
 	return status.Errorf(codes.Unimplemented, "method Sync not implemented")
+}
+func (UnimplementedArtifactServiceServer) GetArtifactDownloadURL(context.Context, *GetArtifactDownloadURLRequest) (*GetArtifactDownloadURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetArtifactDownloadURL not implemented")
 }
 func (UnimplementedArtifactServiceServer) mustEmbedUnimplementedArtifactServiceServer() {}
 func (UnimplementedArtifactServiceServer) testEmbeddedByValue()                         {}
@@ -300,6 +316,24 @@ func _ArtifactService_Sync_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ArtifactService_SyncServer = grpc.BidiStreamingServer[SyncRequest, SyncEvent]
 
+func _ArtifactService_GetArtifactDownloadURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetArtifactDownloadURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArtifactServiceServer).GetArtifactDownloadURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ArtifactService_GetArtifactDownloadURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArtifactServiceServer).GetArtifactDownloadURL(ctx, req.(*GetArtifactDownloadURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ArtifactService_ServiceDesc is the grpc.ServiceDesc for ArtifactService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -330,6 +364,10 @@ var ArtifactService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWithOTP",
 			Handler:    _ArtifactService_GetWithOTP_Handler,
+		},
+		{
+			MethodName: "GetArtifactDownloadURL",
+			Handler:    _ArtifactService_GetArtifactDownloadURL_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

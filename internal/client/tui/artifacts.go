@@ -110,6 +110,11 @@ func (m artifactsModel) Update(msg tea.Msg) (artifactsModel, tea.Cmd) {
 			if !m.loading && len(m.artifacts) > 0 {
 				selectedItem := m.list.SelectedItem()
 				if item, ok := selectedItem.(artifactItem); ok {
+					 logger.Info("🔍 Выбран артефакт для просмотра", 
+                "artifactID", item.artifact.Id,
+                "type", item.artifact.Type,
+                "link", item.artifact.Link,
+                "metaInfo", item.artifact.MetaInfo)
 					return m, func() tea.Msg {
 						return artifactSelectedMsg{artifact: item.artifact}
 					}

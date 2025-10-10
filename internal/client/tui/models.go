@@ -23,32 +23,31 @@ const (
 	createArtifactState
 	settingsState
 	artifactDetailState
+	viewArtifactDetailsState
 )
 
-// Основная модель
 type model struct {
-	state          sessionState
-	auth           authModel
-	mainMenu       mainMenuModel
-	artifacts      artifactsModel
-	createArtifact createArtifactModel
-	settings       settingsModel
-	artifactDetail artifactDetailModel
-	client         *client.GRPCClient
-	width          int
-	height         int
-	err            error
-	successMessage string
+	state               sessionState
+	auth                authModel
+	mainMenu            mainMenuModel
+	artifacts           artifactsModel
+	createArtifact      createArtifactModel
+	settings            settingsModel
+	artifactDetail      artifactDetailModel
+	viewArtifactDetails viewArtifactDetailsModel
+	client              *client.GRPCClient
+	width               int
+	height              int
+	err                 error
+	successMessage      string
 }
 
-// Модель главного меню
 type mainMenuModel struct {
 	choices  []string
 	cursor   int
 	selected map[int]struct{}
 }
 
-// Модель списка артефактов
 type artifactsModel struct {
 	list      list.Model
 	artifacts []*proto.Artifact
@@ -57,19 +56,15 @@ type artifactsModel struct {
 	height    int
 }
 
-// Модель создания артефакта (упрощенная, основная логика в create-artifact.go)
 type createArtifactModel struct {
-	// Эта модель теперь делегирует всю логику внутренней структуре
 	screen createArtifactScreen
 }
 
-// Модель настроек
 type settingsModel struct {
 	choices []string
 	cursor  int
 }
 
-// Элемент списка для артефактов
 type artifactDetailModel struct {
 	artifact *proto.Artifact
 	choices  []string
@@ -135,26 +130,26 @@ func (m artifactDetailModel) handleSelection() tea.Cmd {
 
 func (m artifactDetailModel) View() string {
 	var b strings.Builder
-    b.WriteString(fmt.Sprintf("📋 Артефакт: %s\n\n", m.artifact.MetaInfo))
+	b.WriteString(fmt.Sprintf("📋 Артефакт: %s\n\n", m.artifact.MetaInfo))
 
-    for i, choice := range m.choices {
-        cursor := " "
-        if m.cursor == i {
-            cursor = "▶"
-        }
-        b.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
-    }
+	for i, choice := range m.choices {
+		cursor := " "
+		if m.cursor == i {
+			cursor = "▶"
+		}
+		b.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
+	}
 
-    b.WriteString("\n↑/↓ - навигация • Enter - выбор • Esc - назад\n")
-    
-    content := b.String()
-    style := lipgloss.NewStyle().
-        Width(m.width - 4).  
-        MaxWidth(80).        
-        Height(m.height - 4). 
-        Align(lipgloss.Left)
-    
-    return style.Render(content)
+	b.WriteString("\n↑/↓ - навигация • Enter - выбор • Esc - назад\n")
+
+	content := b.String()
+	style := lipgloss.NewStyle().
+		Width(m.width - 4).
+		MaxWidth(80).
+		Height(m.height - 4).
+		Align(lipgloss.Left)
+
+	return style.Render(content)
 }
 
 func InitialModel(grpcClient *client.GRPCClient) model {
@@ -173,13 +168,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case viewArtifactDetailsMsg:
+		logger.Info("🔄 Переход к просмотру деталей артефакта",
+			"artifactID", msg.artifact.Id,
+			"type", msg.artifact.Type)
+		m.state = viewArtifactDetailsState
+		m.viewArtifactDetails = newViewArtifactDetailsModel(msg.artifact)
+		initCmd := m.viewArtifactDetails.Init()
+		return m, initCmd
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		switch m.state {
 		case artifactsState:
 			listHeight := msg.Height - 4
-			listWidth := msg.Width - 2   
+			listWidth := msg.Width - 2
 			logger.Info(fmt.Sprintf("Установка размера списка: %dx%d", listWidth, listHeight))
 			m.artifacts.list.SetSize(listWidth, listHeight)
 			m.artifacts.width = listWidth
@@ -195,6 +198,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Явно передаем размеры в модель деталей
 			m.artifactDetail.width = msg.Width
 			m.artifactDetail.height = msg.Height
+		case viewArtifactDetailsState:
+			m.viewArtifactDetails.width = msg.Width
+			m.viewArtifactDetails.height = msg.Height
 		}
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
@@ -224,6 +230,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Tick(3*time.Second, func(time.Time) tea.Msg {
 			return clearMessageMsg{}
 		})
+	case artifactContentErrorMsg:
+		if m.state == viewArtifactDetailsState {
+			m.viewArtifactDetails.loading = false
+			m.viewArtifactDetails.error = msg.error
+		}
 	case navigateToMsg:
 		// Обрабатываем навигацию между состояниями
 		m.state = msg.state
@@ -274,7 +285,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Делегируем обновление текущему состоянию
 	switch m.state {
 	case authState:
 		m.auth, cmd = m.auth.Update(msg)
@@ -294,6 +304,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.settings, cmd = m.settings.Update(msg)
 	case artifactDetailState:
 		m.artifactDetail, cmd = m.artifactDetail.Update(msg)
+	case viewArtifactDetailsState:
+		m.viewArtifactDetails, cmd = m.viewArtifactDetails.Update(msg)
+
 	}
 
 	return m, cmd
@@ -323,6 +336,8 @@ func (m model) View() string {
 		view = m.settings.View()
 	case artifactDetailState:
 		view = m.artifactDetail.View()
+	case viewArtifactDetailsState:
+		view = m.viewArtifactDetails.View()
 	}
 
 	return lipgloss.Place(

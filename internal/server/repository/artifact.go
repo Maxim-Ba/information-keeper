@@ -82,7 +82,7 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 	}
 	defer tx.Rollback()
 
-	// 1. СНАЧАЛА сохраняем в БД чтобы получить ID
+	// СНАЧАЛА сохраняем в БД чтобы получить ID
 	query := `
         INSERT INTO artifacts (owner_id, created_at, updated_at, expired_at, type_id, meta_info, link)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -125,7 +125,7 @@ func (r *ArtifactRepository) CreateArtifact(ctx context.Context, artifact *domai
 
 	createdArtifact.Type = artifactType
 
-	// 2. ТЕПЕРЬ загружаем данные в S3, если есть payload
+	// 2. загружаем данные в S3, если есть payload
 	if len(artifact.Payload) > 0 {
 		if err := r.uploadPayloadToS3(ctx, &createdArtifact, artifact.Payload); err != nil {
 			return nil, err
@@ -352,7 +352,7 @@ func (r *ArtifactRepository) GetPresignedURL(ctx context.Context, artifactID str
 		return "", err
 	}
 
-	// ВСЕГДА генерируем presigned URL если есть ссылка
+	// ВСЕГДА генерируем presigned URL, если есть ссылка
 	if artifact.Link == "" {
 		return "", ErrInvalidInput
 	}
@@ -394,4 +394,26 @@ func (r *ArtifactRepository) DownloadPayload(ctx context.Context, artifactID str
 	}
 
 	return payload, nil
+}
+func (r *ArtifactRepository) GetDownloadURL(ctx context.Context, artifactID string) (string, error) {
+    artifact, err := r.GetArtifactByID(ctx, artifactID)
+    if err != nil {
+        return "", err
+    }
+
+    if artifact.Link == "" {
+        return "", ErrNotFound
+    }
+
+    url, err := r.s3client.GetPresignedURL(ctx, s3client.PresignedURLInput{
+        Key:     artifact.Link,
+        Method:  "GET",
+        Expires: 15 * time.Minute, 
+    })
+
+    if err != nil {
+        return "", fmt.Errorf("failed to get presigned URL: %w", err)
+    }
+
+    return url, nil
 }

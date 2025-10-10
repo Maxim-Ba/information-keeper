@@ -65,6 +65,7 @@ type TokenKeeper interface {
 type ArtifactReader interface {
 	GetArtifacts(ctx context.Context, userID string, page int32, onpage int32) ([]domain.Artifact, error)
 	GetArtifactByID(ctx context.Context, userID string, id string) (*domain.Artifact, error)
+	GetDownloadURL(ctx context.Context, userID string, artifactID string) (string, error)
 }
 type ArtifactWriter interface {
 CreateArtifact(ctx context.Context, userID string, req *proto.CreateArtifactRequest) error
@@ -226,10 +227,23 @@ func (s *ArtifactServer) CreateArtifact(ctx context.Context, req *pb.CreateArtif
 }
 
 func (s *ArtifactServer) GetArtifact(ctx context.Context, req *pb.GetArtifactRequest) (*pb.GetArtifactResponse, error) {
-	// TODO: Реализовать получение артефакта
-	slog.Info("AuthServer GetArtifact")
 
-	return &pb.GetArtifactResponse{}, nil
+	slog.Info("AuthServer GetArtifact")
+user, err := getUserFomCtx(ctx, s.tokenService)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+		return nil, status.Error(codes.Unauthenticated, "failed to get user")
+	}
+
+	art,err := s.artifactService.GetArtifactByID(ctx, user.ID, req.ArtifactId)
+	if err != nil {
+		logger.Error(fmt.Sprintf("ArtifactServer CreateArtifact Failed to create artifact: %v", err))
+		return nil, status.Error(codes.Internal, "failed to create artifact")
+	}
+	pbArtifact := domain.DomainToPBArtifact(art)
+	return &pb.GetArtifactResponse{
+		Artifact: pbArtifact,
+	}, nil
 }
 
 func (s *ArtifactServer) ListArtifacts(ctx context.Context, req *pb.ListArtifactsRequest) (*pb.ListArtifactsResponse, error) {
@@ -379,6 +393,27 @@ func (s *ArtifactServer) Sync(stream pb.ArtifactService_SyncServer) error {
 		}
 	}
 }
+
+func (s *ArtifactServer) GetArtifactDownloadURL(ctx context.Context, req *pb.GetArtifactDownloadURLRequest) (*pb.GetArtifactDownloadURLResponse, error) {
+    logger.Info("ArtifactServer GetArtifactDownloadURL")
+    
+    user, err := getUserFomCtx(ctx, s.tokenService)
+    if err != nil {
+        logger.Error(fmt.Sprintf("Failed to get user from token: %v", err))
+        return nil, status.Error(codes.Unauthenticated, "failed to get user")
+    }
+
+    downloadURL, err := s.artifactService.GetDownloadURL(ctx, user.ID, req.ArtifactId)
+    if err != nil {
+        logger.Error(fmt.Sprintf("Failed to get download URL: %v", err))
+        return nil, status.Error(codes.Internal, "failed to get download URL")
+    }
+
+    return &pb.GetArtifactDownloadURLResponse{
+        DownloadUrl: downloadURL,
+    }, nil
+}
+
 func getUserFomCtx(ctx context.Context, tokenService TokenKeeper) (*dto.UserRepoDTO, error) {
 	token, err := tokenService.GetAccessTokenFromContext(ctx)
 	if err != nil {

@@ -22,6 +22,7 @@ type ArtifactRepositoryInterface interface {
 	DeleteArtifact(ctx context.Context, id string) (*domain.Artifact, error)
 	GetArtifactByID(ctx context.Context, id string) (*domain.Artifact, error)
 	GetPresignedURL(ctx context.Context, id string) (string, error)
+	GetDownloadURL(ctx context.Context, artifactID string) (string, error)
 }
 type SyncManagerInterface interface {
 	Subscribe(userID string, clientID string) chan *proto.SyncEvent
@@ -252,4 +253,21 @@ func (s *ArtifactService) processBinaryArtifact(ctx context.Context, artifact *d
 	}
 
 	return nil
+}
+func (s *ArtifactService) GetDownloadURL(ctx context.Context, userID string, artifactID string) (string, error) {
+    artifact, err := s.artifactRepository.GetArtifactByID(ctx, artifactID)
+    if err != nil {
+        return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
+    }
+
+    if !s.isUsersArtifacts(userID, artifact) {
+        return "", ErrForbiddenAction
+    }
+
+    url, err := s.artifactRepository.GetDownloadURL(ctx, artifactID)
+    if err != nil {
+        return "", fmt.Errorf("ArtifactService GetDownloadURL: %w", err)
+    }
+
+    return url, nil
 }

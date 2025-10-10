@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/Maxim-Ba/information-keeper/internal/domain"
 	"github.com/Maxim-Ba/information-keeper/pkg/logger"
 	"github.com/Maxim-Ba/information-keeper/pkg/proto"
 	"github.com/charmbracelet/bubbles/list"
@@ -48,24 +50,27 @@ func (i artifactTypeItem) Description() string { return i.desc }
 func (i artifactTypeItem) FilterValue() string { return i.name }
 
 // Структуры данных для разных типов артефактов
-type TextData struct {
-	Content string `json:"content"`
-	Title   string `json:"title,omitempty"`
-}
+type TextData domain.TextData
+//  struct {
+// 	Content string `json:"content"`
+// 	Title   string `json:"title,omitempty"`
+// }
 
-type LoginPasswordData struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-	Site     string `json:"site,omitempty"`
-	Notes    string `json:"notes,omitempty"`
-}
+type LoginPasswordData domain.LoginPasswordData
+// struct {
+// 	Login    string `json:"login"`
+// 	Password string `json:"password"`
+// 	Site     string `json:"site,omitempty"`
+// 	Notes    string `json:"notes,omitempty"`
+// }
 
-type BankCardData struct {
-	Number     string `json:"number"`
-	Holder     string `json:"holder"`
-	ExpiryDate string `json:"expiry_date"`
-	CVV        string `json:"cvv,omitempty"`
-}
+type BankCardData domain.BankCardData
+// struct {
+// 	Number     string `json:"number"`
+// 	Holder     string `json:"holder"`
+// 	ExpiryDate string `json:"expiry_date"`
+// 	CVV        string `json:"cvv,omitempty"`
+// }
 
 type BinaryData struct {
 	FileName    string `json:"file_name"`
@@ -107,9 +112,7 @@ func (d *BankCardData) ToBinary() ([]byte, error) {
 }
 
 func (d *BankCardData) GetMetaInfo() string {
-	if d.Number != "" && len(d.Number) >= 4 {
-		return fmt.Sprintf("Карта •••• %s", d.Number[len(d.Number)-4:])
-	}
+	
 	return "Банковская карта"
 }
 
@@ -388,11 +391,19 @@ func (s createArtifactScreen) submitArtifact() tea.Cmd {
 			metaInfo = data.GetMetaInfo()
 
 		case proto.ArtifactTypeEnum_BANK_CARD:
+			n, err := strconv.ParseUint(s.inputs["number"].Value(), 10, 64)
+			if err != nil {
+				logger.Error("Ошибка парсинга номера карты:", err)
+			}
+			cvv, err := strconv.ParseUint(s.inputs["cvv"].Value(), 10, 64)
+			if err != nil {
+				logger.Error( "Ошибка парсинга CVV:", err)
+			}
 			data := &BankCardData{
-				Number:     s.inputs["number"].Value(),
+				Number:    n ,
 				Holder:     s.inputs["holder"].Value(),
 				ExpiryDate: s.inputs["expiry"].Value(),
-				CVV:        s.inputs["cvv"].Value(),
+				CVV:        cvv,
 			}
 			payload, err = data.ToBinary()
 			metaInfo = data.GetMetaInfo()

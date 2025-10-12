@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package artifact;
+
+option go_package = "github.com/Maxim-Ba/information-keeper/proto";
+
+
+// ----- Artifact Types -----
+
+enum ArtifactTypeEnum {
+  TEXT = 0;
+  LOGIN_PASSWORD = 1;
+  BANK_CARD = 2;
+  BINARY = 3;
+}
+
+// ----- Artifact Messages -----
+
+message Artifact {
+  string id = 1;
+  string owner_id = 2;
+  int64 created_at = 3;  // Unix timestamp 
+  int64 updated_at = 4;  // Unix timestamp
+  int64 expired_at = 5;  // Unix timestamp
+  ArtifactTypeEnum type = 6;
+  string meta_info = 7;  // Название/описание для пользователя
+  string link = 8;       // Ссылка для скачивания
+}
+
+// ----- CRUD Operations -----
+
+message CreateArtifactRequest {
+  ArtifactTypeEnum type = 1;
+  string meta_info = 2;
+  string link = 3;       // Опционально
+  int64 expired_at = 4;  // Unix timestamp
+  bytes payload = 5;     // Всегда бинарные данные
+}
+
+message CreateArtifactResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+message GetArtifactRequest {
+  string artifact_id = 2;
+}
+
+message GetArtifactResponse {
+  Artifact artifact = 1;
+  bytes payload = 2;     // Бинарные данные, которые нужно парсить по типу
+  string error = 3;
+}
+
+message ListArtifactsRequest {
+  int32 page = 2;
+  int32 on_page = 3;
+  optional ArtifactTypeEnum type_filter = 4;
+}
+
+message ListArtifactsResponse {
+  repeated Artifact artifacts = 1;
+  string error = 2;
+}
+
+message UpdateArtifactRequest {
+  string artifact_id = 1;
+  ArtifactTypeEnum type = 2;
+  string meta_info = 3;
+  string link = 4;
+  int64 expired_at = 5;  // Unix timestamp
+  bytes payload = 6;     // Всегда бинарные данные
+}
+
+message UpdateArtifactResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+message DeleteArtifactRequest {
+  string artifact_id = 2;
+}
+
+message DeleteArtifactResponse {
+  string error = 1;
+}
+
+// ----- OTP Operations -----
+
+message GetWithOTPRequest {
+  string artifact_id = 2;
+}
+
+message GetWithOTPResponse {
+  Artifact artifact = 1;
+  string error = 2;
+}
+
+// ----- Real-time Synchronization -----
+
+message SyncRequest {
+  string client_id = 2;
+  int64 last_sync_time = 3;  // Unix timestamp
+}
+
+message SyncEvent {
+  string event_id = 1;
+  int64 timestamp = 2;  // Unix timestamp
+  oneof event_type {
+    ArtifactCreatedEvent artifact_created = 3;
+    ArtifactUpdatedEvent artifact_updated = 4;
+    ArtifactDeletedEvent artifact_deleted = 5;
+    SyncCompleteEvent sync_complete = 6;
+    ClientConnectedEvent client_connected = 7;    
+    ClientDisconnectedEvent client_disconnected = 8;
+  }
+}
+
+message ArtifactCreatedEvent {
+  Artifact artifact = 1;
+}
+
+message ArtifactUpdatedEvent {
+  Artifact artifact = 1;
+}
+
+message ArtifactDeletedEvent {
+  string artifact_id = 1;
+}
+
+message SyncCompleteEvent {
+  int64 sync_time = 1;  // Unix timestamp
+  int32 events_count = 2;
+}
+message ClientHello {
+  string client_id = 1;
+  string user_agent = 2;
+  int64 connect_time = 3;
+}
+
+message ClientAck {
+  string event_id = 1;
+  bool processed = 2;
+  string error = 3;
+}
+message ClientConnectedEvent {
+  string client_id = 1;
+  string user_agent = 2;
+  int64 connect_time = 3;
+}
+
+message ClientDisconnectedEvent {
+  string client_id = 1;
+  int64 disconnect_time = 2;
+}
+
+message GetArtifactDownloadURLRequest {
+    string artifact_id = 1;
+}
+
+message GetArtifactDownloadURLResponse {
+    string download_url = 1;
+    string error = 2;
+}
+// ----- Service -----
+
+service ArtifactService {
+  rpc CreateArtifact(CreateArtifactRequest) returns (CreateArtifactResponse);
+  rpc GetArtifact(GetArtifactRequest) returns (GetArtifactResponse);
+  rpc ListArtifacts(ListArtifactsRequest) returns (ListArtifactsResponse);
+  rpc UpdateArtifact(UpdateArtifactRequest) returns (UpdateArtifactResponse);
+  rpc DeleteArtifact(DeleteArtifactRequest) returns (DeleteArtifactResponse);
+  rpc GetWithOTP(GetWithOTPRequest) returns (GetWithOTPResponse);
+  rpc Sync(stream SyncRequest) returns (stream SyncEvent);
+  rpc GetArtifactDownloadURL(GetArtifactDownloadURLRequest) returns (GetArtifactDownloadURLResponse);
+}
